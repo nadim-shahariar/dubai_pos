@@ -230,7 +230,9 @@
     const setVariantInput = (tr, html) => { tr.querySelector('.variant-cell').innerHTML = html; };
 
     const variantLabel = (fitment) => {
-        const label = [fitment.brand, fitment.model].filter(Boolean).join(' ');
+        const brand = fitment.brand || fitment.vehicle_brand || '';
+        const model = fitment.model || fitment.vehicle_model || '';
+        const label = [brand, model].filter(Boolean).join(' ');
         const years = fitment.year_from ? ` ${fitment.year_from}–${fitment.year_to}` : '';
         return (label + years).trim() || 'Vehicle variant';
     };
@@ -247,6 +249,25 @@
         setVariantInput(tr, `<button type="button" class="variant-picker selected" data-open-variants>
             ${esc(tr._variant.label)}<span class="change">${esc(tr._variant.sku)} · change / add</span>
         </button>`);
+    };
+
+
+    const renderNewVariantSelect = (tr) => {
+        if (!tr._newVariants?.length) {
+            setVariantInput(tr, `<div class="new-variant-cell">
+                <input class="entry-input entry-variant" placeholder="Variant" autocomplete="off">
+                <button type="button" class="mini-link" data-open-new-variants>+ Add product variants</button>
+            </div>`);
+            return;
+        }
+        const currentSku = tr._variant?.sku;
+        const options = tr._newVariants.map((variant, index) => {
+            const label = variantLabel(variant);
+            return `<option value="${index}" ${currentSku === variant.mapped_part_number ? 'selected' : ''}>${esc(label)} · ${esc(variant.mapped_part_number)}</option>`;
+        }).join('');
+        setVariantInput(tr, `<select class="new-variant-select npv-select">
+            <option value="">Select variant to sell</option>${options}
+        </select><button type="button" class="mini-link" data-open-new-variants>Edit variants (${tr._newVariants.length})</button>`);
     };
 
     const fillProduct = (tr, product) => {
@@ -273,6 +294,7 @@
         tr.querySelector('.duplicate-variant').style.display = '';
         tr.querySelector('.buying-price').style.display = 'none';
         tr._fitments = product.fitments || [];
+        tr._newVariants = [];
         tr._variant = null;
         setVariantInput(tr, `<button type="button" class="variant-picker" data-open-variants>
             Choose / create variant(s)<span class="change">Click to select or add</span>
@@ -304,10 +326,14 @@
         stock.value = 1;
         price.value = 0;
         tr._fitments = [];
+        tr._newVariants = [];
         tr._variant = null;
         tr._baseSku = null;
         tr._cost = null;
-        setVariantInput(tr, '<input class="entry-input entry-variant" placeholder="Variant" autocomplete="off">');
+        setVariantInput(tr, `<div class="new-variant-cell">
+            <input class="entry-input entry-variant" placeholder="Variant" autocomplete="off">
+            <button type="button" class="mini-link" data-open-new-variants>+ Add product variants</button>
+        </div>`);
         tr.querySelector('.duplicate-variant').style.display = 'none';
         const costBtn = tr.querySelector('.buying-price');
         costBtn.style.display = boot.user?.can_view_cost ? '' : 'none';
@@ -360,6 +386,7 @@
         $('#summary-total').textContent = money(total);
         $('#entry-count').textContent = qtyCount + ' item' + (qtyCount === 1 ? '' : 's');
         $('#pay-btn').disabled = total <= 0 || validRows === 0;
+        $('#credit-sale-btn').disabled = total <= 0 || validRows === 0;
         return { subtotal: num(subtotal), discount: num(discount), vat: num(vat), total: num(total) };
     };
 
@@ -372,10 +399,27 @@
             }
             searchProducts(tr, e.target.value);
         }
+        if (e.target.classList.contains('entry-sku') && tr.dataset.isNew === 'true' && !tr._variant) {
+            tr._baseSku = e.target.value.trim();
+        }
         recalc();
     });
 
     $('#entry-body').addEventListener('change', (e) => {
+        if (e.target.classList.contains('npv-select')) {
+            const tr = e.target.closest('.entry-row');
+            const index = e.target.value;
+            if (index === '') {
+                tr._variant = null;
+                const sku = tr.querySelector('.entry-sku');
+                sku.value = tr._baseSku || '';
+                sku.readOnly = false;
+            } else {
+                applyVariant(tr, tr._newVariants[Number(index)]);
+            }
+            recalc();
+            return;
+        }
         if (e.target.classList.contains('entry-product')) {
             const tr = e.target.closest('.entry-row');
             if (!tr.dataset.productId && e.target.value.trim() && !tr.querySelector('.entry-sku').value) {
@@ -406,17 +450,20 @@
         if (e.target.closest('.buying-price')) {
             openBuyingPrice(tr);
         }
+        if (e.target.closest('[data-open-new-variants]')) {
+            openNewProductVariants(tr);
+        }
         if (e.target.closest('.duplicate-variant') || e.target.closest('[data-open-variants]')) {
             openVariantPicker(tr);
         }
     });
 
     let variantRow = null;
+    let npvRow = null;
 
-    const addNewVariantRow = () => {
-        const row = document.createElement('div');
-        row.className = 'new-variant-row';
+    const createVariantInputRow = (values = {}) => {
         const canViewCost = !!boot.user?.can_view_cost;
+        const row = document.createElement('div');
         row.className = 'new-variant-row' + (canViewCost ? ' with-cost' : '');
         row.innerHTML = `
             <input data-new-brand list="variant-brand-list" placeholder="Vehicle brand" autocomplete="off">
@@ -427,7 +474,14 @@
             ${canViewCost ? '<input data-new-cost type="password" inputmode="decimal" autocomplete="off" placeholder="Buying price">' : ''}
             <button type="button" class="remove" data-remove-new-variant>×</button>
         `;
-        $('#new-variant-rows').appendChild(row);
+
+        row.querySelector('[data-new-brand]').value = values.vehicle_brand || values.brand || '';
+        row.querySelector('[data-new-model]').value = values.vehicle_model || values.model || '';
+        row.querySelector('[data-new-year-from]').value = values.year_from || 2018;
+        row.querySelector('[data-new-year-to]').value = values.year_to || 2024;
+        row.querySelector('[data-new-mapped]').value = values.mapped_part_number || '';
+        const cost = row.querySelector('[data-new-cost]');
+        if (cost) cost.value = values.cost_price ?? '';
 
         const brand = row.querySelector('[data-new-brand]');
         const model = row.querySelector('[data-new-model]');
@@ -446,8 +500,71 @@
         brand.addEventListener('input', syncModelList);
         model.addEventListener('focus', syncModelList);
         row.querySelector('[data-remove-new-variant]').addEventListener('click', () => row.remove());
-        brand.focus();
+        return row;
     };
+
+    const addNewVariantRow = () => {
+        const row = createVariantInputRow();
+        $('#new-variant-rows').appendChild(row);
+        row.querySelector('[data-new-brand]').focus();
+    };
+
+    const collectVariantRows = (selector) => {
+        return $$(selector + ' .new-variant-row').map(row => ({
+            vehicle_brand: row.querySelector('[data-new-brand]').value.trim(),
+            vehicle_model: row.querySelector('[data-new-model]').value.trim(),
+            year_from: Number(row.querySelector('[data-new-year-from]').value || 0),
+            year_to: Number(row.querySelector('[data-new-year-to]').value || 0),
+            mapped_part_number: row.querySelector('[data-new-mapped]').value.trim(),
+            cost_price: row.querySelector('[data-new-cost]')?.value.trim() || null,
+        })).filter(row => row.vehicle_brand || row.vehicle_model || row.mapped_part_number);
+    };
+
+    const openNewProductVariants = (tr) => {
+        if (!tr || tr.dataset.isNew !== 'true') return;
+        npvRow = tr;
+        $('#npv-product').textContent = tr.querySelector('.entry-product').value + ' — add the variants for this new product.';
+        $('#npv-rows').innerHTML = '';
+        const variants = tr._newVariants || [];
+        if (variants.length) {
+            variants.forEach(variant => $('#npv-rows').appendChild(createVariantInputRow(variant)));
+        } else {
+            $('#npv-rows').appendChild(createVariantInputRow());
+        }
+        openModal('new-product-variant-modal');
+        setTimeout(() => $('#npv-rows [data-new-brand]')?.focus(), 100);
+    };
+
+    const saveNewProductVariants = () => {
+        if (!npvRow) return;
+        const variants = collectVariantRows('#npv-rows');
+        if (!variants.length) { toast('Add at least one variant.', 'error'); return; }
+        const invalid = variants.find(v => !v.vehicle_brand || !v.vehicle_model);
+        if (invalid) { toast('Each variant needs a vehicle brand and model.', 'error'); return; }
+        const missingPart = variants.find(v => !v.mapped_part_number);
+        if (missingPart) { toast('Each variant needs its own part number.', 'error'); return; }
+
+        const row = npvRow;
+        row._newVariants = variants.map(v => ({ ...v, brand: v.vehicle_brand, model: v.vehicle_model }));
+        if (!row._baseSku) {
+            row._baseSku = row.querySelector('.entry-sku').value.trim() || variants[0].mapped_part_number;
+        }
+        if (row._variant && !variants.some(v => v.mapped_part_number === row._variant.sku)) {
+            row._variant = null;
+        }
+        row.querySelector('.entry-sku').value = row._baseSku;
+        renderNewVariantSelect(row);
+        closeModal('new-product-variant-modal');
+        toast(variants.length + ' variant' + (variants.length === 1 ? '' : 's') + ' saved for this new product.');
+        npvRow = null;
+    };
+
+    $('#npv-add').addEventListener('click', () => {
+        const row = createVariantInputRow();
+        $('#npv-rows').appendChild(row);
+        row.querySelector('[data-new-brand]').focus();
+    });
+    $('#npv-save').addEventListener('click', saveNewProductVariants);
 
     const openVariantPicker = (tr) => {
         variantRow = tr;
@@ -456,7 +573,7 @@
         $('#variant-options').innerHTML = tr._fitments?.length
             ? tr._fitments.map((fitment, index) => {
                 const label = variantLabel(fitment);
-                const sku = fitment.mapped_part_number || tr.querySelector('.entry-sku').value;
+                const sku = fitment.mapped_part_number || tr._baseSku || tr.querySelector('.entry-sku').value;
                 return `<label class="variant-option">
                     <input type="checkbox" value="${index}" ${selectedLabel === label ? 'checked' : ''}>
                     <span><span class="v-name">${esc(label)}</span><span class="v-meta">Part no. ${esc(sku)}</span></span>
@@ -467,16 +584,7 @@
         openModal('variant-picker-modal');
     };
 
-    const collectNewVariants = () => {
-        return $$('#new-variant-rows .new-variant-row').map(row => ({
-            vehicle_brand: row.querySelector('[data-new-brand]').value.trim(),
-            vehicle_model: row.querySelector('[data-new-model]').value.trim(),
-            year_from: Number(row.querySelector('[data-new-year-from]').value || 0),
-            year_to: Number(row.querySelector('[data-new-year-to]').value || 0),
-            mapped_part_number: row.querySelector('[data-new-mapped]').value.trim(),
-            cost_price: row.querySelector('[data-new-cost]')?.value.trim() || null,
-        })).filter(row => row.vehicle_brand || row.vehicle_model);
-    };
+    const collectNewVariants = () => collectVariantRows('#new-variant-rows');
 
     const applySelectedVariants = async () => {
         if (!variantRow) return;
@@ -616,19 +724,40 @@
     };
     $$('.method-btn').forEach(btn => btn.addEventListener('click', () => addPayment(btn.dataset.method)));
 
-    const openPayment = () => {
+    const openPayment = (method = 'cash') => {
         if (!state.shift) { openModal('shift-modal'); toast('Open a shift before taking payment.', 'error'); return; }
         const total = recalc().total;
         if (total <= 0) { toast('Add a product and selling price first.', 'error'); return; }
-        const invalid = validRows().find(row => row.is_new && (!row.sku || !row.code || row.stock < row.qty));
-        if (invalid) { toast('New product needs SKU, buying code and enough opening stock.', 'error'); return; }
-        state.payments = [{ method: 'cash', amount: total, tendered: total, reference: '' }];
+        const invalid = validRows().find(row => row.is_new && (!row.base_sku || !row.code || row.stock < row.qty));
+        if (invalid) { toast('New product needs a part number, buying code and enough opening stock.', 'error'); return; }
+
+        if (method === 'credit') {
+            const c = customer();
+            if (!c) {
+                toast('Select a customer before making a credit sale.', 'error');
+                customerSelect.focus();
+                return;
+            }
+            if (c.credit_limit <= 0) {
+                toast('This customer has no credit limit. Ask a manager to set one.', 'error');
+                return;
+            }
+            const available = c.credit_limit - c.outstanding;
+            if (total > available + 0.01) {
+                toast('Credit limit exceeded. Available: ' + money(available) + '.', 'error');
+                return;
+            }
+        }
+
+        state.payments = [{ method, amount: total, tendered: method === 'cash' ? total : null, reference: '' }];
+        $$('.method-btn').forEach(button => button.classList.toggle('active', button.dataset.method === method));
         $('#approval-pin').value = '';
         $('#sale-note').value = '';
         renderPayments(total);
         openModal('payment-modal');
     };
-    $('#pay-btn').addEventListener('click', openPayment);
+    $('#pay-btn').addEventListener('click', () => openPayment('cash'));
+    $('#credit-sale-btn').addEventListener('click', () => openPayment('credit'));
 
     const validRows = () => $$('#entry-body .entry-row').map(tr => {
         const variant = getVariant(tr);
@@ -646,6 +775,8 @@
             discount_value: Number(tr.querySelector('.entry-discount').value || 0),
             original_price: Number(tr.dataset.originalPrice || 0),
             cost: tr._cost ?? null,
+            base_sku: tr._baseSku || tr.querySelector('.entry-sku').value.trim(),
+            variants: tr._newVariants || [],
             variant_label: variant.label,
             variant_sku: variant.sku,
         };
@@ -660,12 +791,12 @@
                 method: 'POST',
                 body: JSON.stringify({
                     name: row.name,
-                    primary_part_number: row.sku,
+                    primary_part_number: row.base_sku || row.sku,
                     selling_price: row.price,
                     secret_cost_code: row.code,
                     stock_qty: row.stock,
                     cost_price: row.cost ?? undefined,
-                    variants: [],
+                    variants: row.variants,
                 }),
             });
             row.tr.dataset.productId = data.product.id;
@@ -710,7 +841,11 @@
             $('#complete-invoice').textContent = sale.sale.invoice_number + ' · ' + sale.sale.payment_status;
             $('#complete-receipt').href = sale.sale.receipt_url;
             $('#complete-invoice-link').href = sale.sale.invoice_url;
-            $('#complete-change').textContent = Number(sale.sale.change_total) > 0 ? 'Change due: ' + money(sale.sale.change_total) : 'Paid in full. No balance due.';
+            const balanceDue = Number(sale.sale.balance_due || 0);
+            const change = Number(sale.sale.change_total || 0);
+            $('#complete-change').textContent = balanceDue > 0
+                ? 'Credit balance due: ' + money(balanceDue)
+                : (change > 0 ? 'Change due: ' + money(change) : 'Paid in full. No balance due.');
             closeModal('payment-modal');
             openModal('complete-modal');
             resetSale();
@@ -774,7 +909,8 @@
         if (e.key === 'F2') { e.preventDefault(); addRow(); }
         if (e.key === 'F3') { e.preventDefault(); $('#entry-body .entry-product')?.focus(); }
         if (e.key === 'F4') { e.preventDefault(); openNewCustomer(); }
-        if (e.key === 'F9') { e.preventDefault(); openPayment(); }
+        if (e.key === 'F9') { e.preventDefault(); openPayment('cash'); }
+        if (e.key === 'F10') { e.preventDefault(); openPayment('credit'); }
         if (e.key === '?' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
             e.preventDefault();
             openShortcuts();

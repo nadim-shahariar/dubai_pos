@@ -55,7 +55,7 @@
             <button type="button" class="btn btn-secondary" id="add-row-btn">+ Add product row</button>
             <button type="button" class="btn btn-ghost" id="clear-rows-btn">Clear all</button>
             <span class="entry-help">Type a product name, SKU, or key. Pick a suggestion, or choose <strong>Create new</strong> to add a new product inline.</span>
-            <span class="entry-shortcuts"><b>F2</b> add row · <b>F3</b> product · <b>F4</b> customer · <b>F9</b> pay · <b>?</b> help</span>
+            <span class="entry-shortcuts"><b>F2</b> add row · <b>F3</b> product · <b>F4</b> customer · <b>F9</b> cash / card · <b>F10</b> credit · <b>?</b> help</span>
         </div>
     </section>
 
@@ -70,8 +70,10 @@
             <div class="total-row"><span>VAT <span id="summary-rate">{{ number_format($boot['tax_rate'], 2) }}%</span></span><b id="summary-vat">AED 0.00</b></div>
             <div class="total-row grand"><span>Total <span class="vat-note" id="summary-vat-note">{{ $boot['prices_include_vat'] ? 'VAT inclusive' : 'VAT exclusive' }}</span></span><b id="summary-total">AED 0.00</b></div>
             <div class="pay-actions">
-                <button class="btn pay-main" id="pay-btn" type="button" disabled>Pay · F9</button>
+                <button class="btn pay-main" id="pay-btn" type="button" disabled>Cash / card sale · F9</button>
+                <button class="btn btn-gold credit-main" id="credit-sale-btn" type="button" disabled>Credit sale · F10</button>
             </div>
+            <div class="small muted" style="margin-top:6px">Credit sale requires a selected customer with available credit.</div>
             <div class="pos-footnote">Discounts and price changes above the cashier limit require a manager PIN at payment.</div>
         </div>
         <div class="entry-summary-foot">
@@ -138,12 +140,39 @@
                 <div><kbd>F3</kbd><span>Focus product search</span></div>
                 <div><kbd>F4</kbd><span>Create a new customer</span></div>
                 <div><kbd>Enter</kbd><span>Pick the first product suggestion</span></div>
-                <div><kbd>F9</kbd><span>Take payment</span></div>
+                <div><kbd>F9</kbd><span>Cash / card sale</span></div>
+                <div><kbd>F10</kbd><span>Credit sale</span></div>
                 <div><kbd>Esc</kbd><span>Close the open modal</span></div>
                 <div><kbd>?</kbd><span>Show this help</span></div>
             </div>
         </div>
         <div class="modal-foot"><button class="btn" type="button" data-close="shortcuts-modal">Got it</button></div>
+    </div>
+</div>
+
+{{-- New product variant builder --}}
+<div class="modal-backdrop" id="new-product-variant-modal">
+    <div class="modal wide">
+        <div class="modal-head">
+            <div><h2>New product variants</h2><p id="npv-product">Add the vehicle variants that belong to this new product.</p></div>
+            <button class="modal-close" data-close="new-product-variant-modal" type="button">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="flex items-center justify-between gap-1 mb-1">
+                <span class="small muted">Each row becomes a saved vehicle variant with its own part number.</span>
+                <button class="btn btn-secondary btn-sm" type="button" id="npv-add">+ Add variant</button>
+            </div>
+            <div class="new-variant-labels {{ auth()->user()->canViewCost() ? 'with-cost' : '' }}">
+                <span>Vehicle brand</span><span>Model</span><span>Year from</span><span>Year to</span><span>Part number *</span>
+                @if(auth()->user()->canViewCost())<span>Buying price</span>@endif
+                <span></span>
+            </div>
+            <div id="npv-rows"></div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-secondary" type="button" data-close="new-product-variant-modal">Cancel</button>
+            <button class="btn" type="button" id="npv-save">Save variants</button>
+        </div>
     </div>
 </div>
 

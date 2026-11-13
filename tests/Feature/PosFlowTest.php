@@ -182,6 +182,45 @@ class PosFlowTest extends TestCase
     }
 
 
+
+    public function test_cashier_can_complete_a_credit_sale_for_a_customer(): void
+    {
+        $cashier = $this->cashier();
+        $customer = Customer::where('credit_limit', '>', 0)->firstOrFail();
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+
+        $this->actingAs($cashier)->postJson('/api/pos/sales', [
+            'customer_id' => $customer->id,
+            'items' => [[
+                'product_id' => $product->id,
+                'qty' => 1,
+                'unit_price' => 125,
+            ]],
+            'payments' => [['method' => 'credit', 'amount' => 125]],
+        ])->assertCreated()
+            ->assertJsonPath('sale.payment_status', 'credit')
+            ->assertJsonPath('sale.paid_total', 0)
+            ->assertJsonPath('sale.balance_due', 125);
+
+        $this->assertDatabaseHas('sale_payments', ['method' => 'credit', 'amount' => 125]);
+    }
+
+    public function test_credit_sale_requires_a_registered_customer(): void
+    {
+        $cashier = $this->cashier();
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+
+        $this->actingAs($cashier)->postJson('/api/pos/sales', [
+            'items' => [[
+                'product_id' => $product->id,
+                'qty' => 1,
+                'unit_price' => 125,
+            ]],
+            'payments' => [['method' => 'credit', 'amount' => 125]],
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors('customer_id');
+    }
+
     public function test_credit_collection_updates_invoice_balance_and_generates_a_receipt(): void
     {
         $cashier = $this->cashier();
