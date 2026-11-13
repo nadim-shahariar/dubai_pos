@@ -44,9 +44,9 @@ class VehicleVariantService
 
             $mapped = trim((string) ($row['mapped_part_number'] ?? ''));
 
-            if ($mapped === '') {
+            if (mb_strlen($mapped) > 50) {
                 throw ValidationException::withMessages([
-                    "variants.{$index}.mapped_part_number" => 'A part number is required for each vehicle variant.',
+                    "variants.{$index}.mapped_part_number" => 'Part number must not exceed 50 characters.',
                 ]);
             }
 
@@ -69,7 +69,7 @@ class VehicleVariantService
                 'vehicle_model' => $model,
                 'year_from' => $yearFrom,
                 'year_to' => $yearTo,
-                'mapped_part_number' => $mapped,
+                'mapped_part_number' => $mapped !== '' ? $mapped : null,
                 'cost_price' => ($cost === null || $cost === '') ? null : round((float) $cost, 2),
                 'stock_qty' => ($stock === null || $stock === '') ? null : round((float) $stock, 3),
             ];

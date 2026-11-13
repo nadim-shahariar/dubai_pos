@@ -88,7 +88,7 @@
             <div class="modal-body">
                 <div id="catalog-quick-error" class="alert alert-error hidden"></div>
                 <div class="form-grid">
-                    <div class="field"><label>Primary part number *</label><input name="primary_part_number" id="cq-part" required maxlength="50" placeholder="BP-101" autocomplete="off"></div>
+                    <div class="field"><label>Part number (optional)</label><input name="primary_part_number" id="cq-part" maxlength="50" placeholder="BP-101" autocomplete="off"></div>
                     <div class="field"><label>Product name *</label><input name="name" id="cq-name" required maxlength="150" placeholder="Front Brake Pad Set"></div>
                     <div class="field"><label>Selling price (AED) *</label><input name="selling_price" type="number" step="0.01" min="0" required></div>
                     <div class="field"><label>Secret cost code *</label><input name="secret_cost_code" required maxlength="20" placeholder="MAE" class="mono"></div>
@@ -107,7 +107,7 @@
                 </div>
                 <div class="table-wrap" style="border:1px solid var(--line);border-radius:9px">
                     <table class="table" id="catalog-quick-variants" data-variant-table style="margin:0">
-                        <thead><tr><th>Vehicle brand</th><th>Model</th><th>Year from</th><th>Year to</th><th>Part number *</th><th>Stock</th><th></th></tr></thead>
+                        <thead><tr><th>Vehicle brand</th><th>Model</th><th>Year from</th><th>Year to</th><th>Part number (optional)</th><th>Stock</th><th></th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>

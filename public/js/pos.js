@@ -315,7 +315,7 @@
             <span class="entry-new-badge hidden">NEW — created on payment</span>
         </td>
         <td class="variant-cell"><input class="entry-input entry-variant" placeholder="Variant" autocomplete="off"></td>
-        <td><input class="entry-input entry-sku mono" placeholder="SKU"></td>
+        <td><input class="entry-input entry-sku mono" placeholder="Part no. (optional)"></td>
         <td><input class="entry-input entry-code mono" placeholder="Code"></td>
         <td><input class="entry-input entry-stock" type="number" min="0" step="1" value="1"></td>
         <td><input class="entry-input entry-qty" type="number" min="0.001" step="1" value="1"></td>
@@ -394,10 +394,10 @@
             </div>`);
             return;
         }
-        const currentSku = tr._variant?.sku;
+        const currentLabel = tr._variant?.label;
         const options = tr._newVariants.map((variant, index) => {
             const label = variantLabel(variant);
-            return `<option value="${index}" ${currentSku === variant.mapped_part_number ? 'selected' : ''}>${esc(label)} · ${esc(variant.mapped_part_number)}</option>`;
+            return `<option value="${index}" ${currentLabel === variantLabel(variant) ? 'selected' : ''}>${esc(label)} · ${esc(variant.mapped_part_number)}</option>`;
         }).join('');
         setVariantInput(tr, `<select class="new-variant-select npv-select">
             <option value="">Select variant to sell</option>${options}
@@ -484,7 +484,7 @@
         recalc();
         if (!silent) {
             sku.focus();
-            toast('New product row. Complete SKU, buying code and selling price.', 'success');
+            toast('New product row. Complete buying code and selling price. Part number is optional.', 'success');
         }
     };
 
@@ -633,7 +633,7 @@
             <input data-new-model list="variant-model-list" placeholder="Model" autocomplete="off">
             <input data-new-year-from type="number" min="1950" max="2100" value="2018" placeholder="From">
             <input data-new-year-to type="number" min="1950" max="2100" value="2024" placeholder="To">
-            <input data-new-mapped placeholder="Part number *">
+            <input data-new-mapped placeholder="Part number (optional)">
             <input data-new-stock type="number" min="0" step="0.001" placeholder="Variant stock (blank = not set)">
             ${canViewCost ? '<input data-new-cost type="password" inputmode="decimal" autocomplete="off" placeholder="Buying price">' : ''}
             <button type="button" class="remove" data-remove-new-variant>×</button>
@@ -707,15 +707,13 @@
         if (!variants.length) { toast('Add at least one variant.', 'error'); return; }
         const invalid = variants.find(v => !v.vehicle_brand || !v.vehicle_model);
         if (invalid) { toast('Each variant needs a vehicle brand and model.', 'error'); return; }
-        const missingPart = variants.find(v => !v.mapped_part_number);
-        if (missingPart) { toast('Each variant needs its own part number.', 'error'); return; }
 
         const row = npvRow;
         row._newVariants = variants.map(v => ({ ...v, brand: v.vehicle_brand, model: v.vehicle_model }));
         if (!row._baseSku) {
             row._baseSku = row.querySelector('.entry-sku').value.trim() || variants[0].mapped_part_number;
         }
-        if (row._variant && !variants.some(v => v.mapped_part_number === row._variant.sku)) {
+        if (row._variant && !variants.some(v => variantLabel(v) === row._variant.label)) {
             row._variant = null;
         }
         row.querySelector('.entry-sku').value = row._baseSku;
@@ -762,11 +760,6 @@
         const invalid = newVariants.find(v => !v.vehicle_brand || !v.vehicle_model);
         if (invalid) {
             toast('Each new variant needs a vehicle brand and model.', 'error');
-            return;
-        }
-        const missingPart = newVariants.find(v => !v.mapped_part_number);
-        if (missingPart) {
-            toast('Each new variant needs its own part number.', 'error');
             return;
         }
         if (!selected.length && !newVariants.length) {
@@ -894,8 +887,8 @@
         if (!state.shift) { openModal('shift-modal'); toast('Open a shift before taking payment.', 'error'); return; }
         const total = recalc().total;
         if (total <= 0) { toast('Add a product and selling price first.', 'error'); return; }
-        const invalid = validRows().find(row => row.is_new && (!row.base_sku || !row.code || row.stock < row.qty));
-        if (invalid) { toast('New product needs a part number, buying code and enough opening stock.', 'error'); return; }
+        const invalid = validRows().find(row => row.is_new && (!row.code || row.stock < row.qty));
+        if (invalid) { toast('New product needs a buying code and enough opening stock.', 'error'); return; }
 
         if (method === 'credit') {
             const c = customer();
@@ -952,7 +945,7 @@
     const createNewProducts = async () => {
         for (const row of validRows()) {
             if (!row.is_new) continue;
-            if (!row.sku || !row.code) throw new Error('New product ' + row.name + ' needs an SKU and buying code.');
+            if (!row.code) throw new Error('New product ' + row.name + ' needs a buying code.');
             if (row.stock < row.qty) throw new Error('Opening stock for ' + row.name + ' must cover the sold quantity.');
             const hasVariantStock = (row.variants || []).some(variant => variant.stock_qty !== null && variant.stock_qty !== undefined && variant.stock_qty !== '');
             const variantStock = (row.variants || []).reduce((sum, variant) => sum + Number(variant.stock_qty || 0), 0);
@@ -961,7 +954,7 @@
                 method: 'POST',
                 body: JSON.stringify({
                     name: row.name,
-                    primary_part_number: row.base_sku || row.sku,
+                    primary_part_number: row.base_sku || row.sku || null,
                     selling_price: row.price,
                     secret_cost_code: row.code,
                     stock_qty: openingStock,
@@ -969,8 +962,8 @@
                     variants: row.variants,
                 }),
             });
-            if (row.variant_sku) {
-                const matches = (data.product.fitments || []).filter(f => f.mapped_part_number === row.variant_sku && variantLabel(f) === row.variant_label);
+            if (row.tr._variant) {
+                const matches = (data.product.fitments || []).filter(f => variantLabel(f) === row.variant_label);
                 if (matches.length === 1 && row.tr._variant) row.tr._variant.id = matches[0].id;
             }
             row.tr._fitments = data.product.fitments || [];

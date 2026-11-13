@@ -200,3 +200,7 @@ Each variant must have its own counted stock. Existing blank variant quantities 
 Run `php artisan migrate --force` after this update to add per-variant ledger balances. Older movements without a recorded variant balance show a dash, rather than a misleading combined balance. Do not re-run the demo seeder on an existing shop database.
 
 Validation: `php artisan test` and `node --test tests/JavaScript/variant-stock.test.cjs`.
+
+### Optional part numbers
+
+Product and variant part numbers are optional in catalogue forms and POS creation. Multiple products may have a null part number. Existing part numbers retain uniqueness checks. Variants without part numbers are selected by their saved variant ID, so their stock stays independent. Run migrations after deployment to make the product part-number column nullable.

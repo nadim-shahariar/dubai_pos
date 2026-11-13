@@ -125,7 +125,7 @@ class PosApiController extends Controller
         abort_unless($request->user()->canSell() || $request->user()->canManageCatalog(), 403);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
-            'primary_part_number' => ['required', 'string', 'max:50', 'unique:products,primary_part_number'],
+            'primary_part_number' => ['nullable', 'string', 'max:50', 'unique:products,primary_part_number'],
             'selling_price' => ['required', 'numeric', 'min:0', 'max:9999999'],
             'secret_cost_code' => ['required', 'string', 'min:2', 'max:20', 'unique:products,secret_cost_code'],
             'stock_qty' => ['nullable', 'numeric', 'min:0'],
@@ -146,7 +146,7 @@ class PosApiController extends Controller
             $cost = $canViewCost ? (float) ($data['cost_price'] ?? 0) : 0.0;
 
             $product = Product::create([
-                'primary_part_number' => strtoupper(trim($data['primary_part_number'])),
+                'primary_part_number' => (strtoupper(trim((string) ($data['primary_part_number'] ?? ''))) ?: null),
                 'name' => $data['name'],
                 'selling_price' => $data['selling_price'],
                 'cost_price' => $cost,
@@ -216,7 +216,8 @@ class PosApiController extends Controller
                 'model' => $fitment->model?->name,
                 'year_from' => $fitment->year_from,
                 'year_to' => $fitment->year_to,
-                'mapped_part_number' => $fitment->mapped_part_number ?: $product->primary_part_number,
+                'mapped_part_number' => $fitment->mapped_part_number,
+                'stock_qty' => $fitment->stock_qty === null ? null : (float) $fitment->stock_qty,
             ]);
 
         return response()->json(['data' => $fitments]);

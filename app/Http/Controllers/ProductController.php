@@ -56,7 +56,7 @@ class ProductController extends Controller
     public function store(Request $request, StockService $stock, AuditService $audit, VehicleVariantService $variants)
     {
         $data = $this->validated($request);
-        $data['primary_part_number'] = strtoupper(trim($data['primary_part_number']));
+        $data['primary_part_number'] = (strtoupper(trim((string) ($data['primary_part_number'] ?? ''))) ?: null);
         $data['secret_cost_code'] = strtoupper(trim($data['secret_cost_code']));
         $data['cost_pending'] = ! $request->user()->canViewCost();
 
@@ -91,7 +91,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $product, AuditService $audit)
     {
         $data = $this->validated($request, $product);
-        $data['primary_part_number'] = strtoupper(trim($data['primary_part_number']));
+        $data['primary_part_number'] = (strtoupper(trim((string) ($data['primary_part_number'] ?? ''))) ?: null);
         $data['secret_cost_code'] = strtoupper(trim($data['secret_cost_code']));
 
         $old = $product->only(['selling_price', 'cost_price', 'secret_cost_code', 'primary_part_number']);
@@ -158,7 +158,7 @@ class ProductController extends Controller
     private function validated(Request $request, ?Product $product = null): array
     {
         $data = $request->validate([
-            'primary_part_number' => ['required', 'string', 'max:50', Rule::unique('products')->ignore($product?->id)],
+            'primary_part_number' => ['nullable', 'string', 'max:50', Rule::unique('products')->ignore($product?->id)],
             'name' => ['required', 'string', 'max:150'],
             'name_ar' => ['nullable', 'string', 'max:150'],
             'description' => ['nullable', 'string', 'max:1000'],
