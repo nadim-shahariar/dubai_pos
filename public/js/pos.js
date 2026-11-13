@@ -324,26 +324,64 @@
     $('#customer-clear').addEventListener('click', () => setCustomer(null));
 
     // ---------------------------------------------------------------- quick add
-    const fillQuickAddModels = () => {
-        const brandId = Number($('#qa-fit-brand').value);
-        const brand = boot.vehicles.find(v => Number(v.id) === brandId);
-        const select = $('#qa-fit-model');
-        select.innerHTML = '<option value="">Select model</option>';
+    const quickAddBrand = $('#qa-fit-brand');
+    const quickAddModel = $('#qa-fit-model');
+    const quickAddModelList = $('#qa-vehicle-model-list');
+
+    const syncQuickAddModels = (clearModel = false) => {
+        quickAddModelList.innerHTML = '';
+        if (clearModel) quickAddModel.value = '';
+
+        const name = quickAddBrand.value.trim().toLowerCase();
+        const brand = boot.vehicles.find(v => v.name.toLowerCase() === name);
         if (!brand) return;
+
         brand.models.forEach(model => {
             const option = document.createElement('option');
-            option.value = model.id;
-            option.textContent = model.name;
-            select.appendChild(option);
+            option.value = model.name;
+            quickAddModelList.appendChild(option);
         });
     };
-    $('#qa-fit-brand').addEventListener('change', fillQuickAddModels);
+    quickAddBrand.addEventListener('input', () => syncQuickAddModels(true));
+    quickAddBrand.addEventListener('change', () => syncQuickAddModels(true));
+
+
+    const addDatalistOption = (selector, value) => {
+        const list = $(selector);
+        if (!list || !value) return;
+        const exists = Array.from(list.querySelectorAll('option')).some(option => option.value.toLowerCase() === String(value).toLowerCase());
+        if (!exists) {
+            const option = document.createElement('option');
+            option.value = value;
+            list.appendChild(option);
+        }
+    };
+
+    const addQuickAddSuggestions = (product) => {
+        if (product.brand) {
+            addDatalistOption('#qa-part-brand-list', product.brand);
+        }
+        (product.fitments || []).forEach(fitment => {
+            if (fitment.brand) {
+                addDatalistOption('#qa-vehicle-brand-list', fitment.brand);
+                let brand = boot.vehicles.find(v => v.name.toLowerCase() === String(fitment.brand).toLowerCase());
+                if (!brand) {
+                    brand = { id: null, name: fitment.brand, models: [] };
+                    boot.vehicles.push(brand);
+                }
+                if (fitment.model && !brand.models.some(model => String(model.name || model).toLowerCase() === String(fitment.model).toLowerCase())) {
+                    brand.models.push({ id: null, name: fitment.model });
+                }
+            }
+        });
+    };
+
     const openQuickAdd = () => {
         $('#quick-add-form').reset();
         $('#qa-stock').value = 0;
         if ($('#qa-cost')) $('#qa-cost').value = 0;
         $('#qa-status').textContent = 'Duplicate checks run when you submit. The product is added to the cart immediately after creation.';
-        fillQuickAddModels();
+        syncQuickAddModels(true);
         openModal('quick-add-modal');
         setTimeout(() => $('#qa-name').focus(), 100);
     };
@@ -354,13 +392,14 @@
         const form = new FormData(e.target);
         const payload = {};
         form.forEach((value, key) => { if (value !== '') payload[key] = value; });
-        ['selling_price', 'stock_qty', 'cost_price', 'year_from', 'year_to', 'category_id', 'fitment_brand_id', 'fitment_model_id'].forEach(key => {
+        ['selling_price', 'stock_qty', 'cost_price', 'year_from', 'year_to', 'category_id'].forEach(key => {
             if (payload[key] !== undefined) payload[key] = Number(payload[key]);
         });
         try {
             $('#qa-status').textContent = 'Creating product…';
             const data = await api('/api/pos/quick-add', { method: 'POST', body: JSON.stringify(payload) });
             addProduct(data.product);
+            addQuickAddSuggestions(data.product);
             closeModal('quick-add-modal');
             toast('Product ' + data.product.primary_part_number + ' created and added.');
         } catch (err) {

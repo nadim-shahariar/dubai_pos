@@ -43,6 +43,7 @@ class ProductController extends Controller
             'product' => new Product(),
             'categories' => Category::orderBy('name')->get(),
             'brands' => CarBrand::with('models')->orderBy('name')->get(),
+            'partBrands' => $this->partBrands(),
         ]);
     }
 
@@ -74,6 +75,7 @@ class ProductController extends Controller
             'product' => $product,
             'categories' => Category::orderBy('name')->get(),
             'brands' => CarBrand::with('models')->orderBy('name')->get(),
+            'partBrands' => $this->partBrands(),
         ]);
     }
 
@@ -93,20 +95,27 @@ class ProductController extends Controller
     public function storeFitment(Request $request, Product $product)
     {
         $data = $request->validate([
-            'car_brand_id' => ['required', 'exists:car_brands,id'],
-            'car_model_id' => ['required', 'exists:car_models,id'],
+            'vehicle_brand' => ['required', 'string', 'max:60'],
+            'vehicle_model' => ['required', 'string', 'max:80'],
             'year_from' => ['required', 'integer', 'between:1950,2100'],
             'year_to' => ['required', 'integer', 'between:1950,2100', 'gte:year_from'],
             'engine' => ['nullable', 'string', 'max:50'],
             'mapped_part_number' => ['nullable', 'string', 'max:50'],
         ]);
 
-        $model = CarModel::findOrFail($data['car_model_id']);
-        abort_unless((int) $model->car_brand_id === (int) $data['car_brand_id'], 422, 'The model does not belong to the selected brand.');
+        $brand = CarBrand::findOrCreateByName($data['vehicle_brand']);
+        $model = CarModel::findOrCreateForBrand($brand, $data['vehicle_model']);
 
-        $product->fitments()->create($data);
+        $product->fitments()->create([
+            'car_brand_id' => $brand->id,
+            'car_model_id' => $model->id,
+            'year_from' => $data['year_from'],
+            'year_to' => $data['year_to'],
+            'engine' => $data['engine'] ?? null,
+            'mapped_part_number' => $data['mapped_part_number'] ?? null,
+        ]);
 
-        return back()->with('success', 'Fitment added.');
+        return back()->with('success', 'Fitment added. '.$brand->name.' '.$model->name.' is now saved for future suggestions.');
     }
 
     public function destroyFitment(Product $product, \App\Models\ProductFitment $fitment)
@@ -135,6 +144,16 @@ class ProductController extends Controller
         $alias->delete();
 
         return back()->with('success', 'Cross-reference removed.');
+    }
+
+    private function partBrands()
+    {
+        return Product::query()
+            ->whereNotNull('brand')
+            ->where('brand', '<>', '')
+            ->distinct()
+            ->orderBy('brand')
+            ->pluck('brand');
     }
 
     private function validated(Request $request, ?Product $product = null): array

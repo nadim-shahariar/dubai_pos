@@ -10,7 +10,7 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 
 - **Fitment-first catalogue** — one product, many vehicle fitments and OEM/cross-reference numbers. Search by part number, vehicle, year, cross-reference, name, or barcode.
 - **Secret cost code** — a manually entered code shown to counter staff. The numeric cost is permission-gated and never sent to a cashier's API response or printed on customer documents.
-- **Quick Add** — create a product, fitment, price, secret code and opening stock without leaving the sale.
+- **Quick Add** — create a product, fitment, price, secret code and opening stock without leaving the sale. Part brands and vehicle brands/models have saved suggestions; a new name is written to the database when you save.
 - **POS cart** — quantities, line discounts, order discounts, price override with a reason, hold/resume, split cash/card/credit/bank payments and cash change.
 - **Approval controls** — discounts above the cashier limit and price overrides require a manager PIN (`1234` in the demo).
 - **UAE VAT invoices** — 5% VAT, VAT-inclusive or VAT-exclusive pricing, sequential `GG-2026-000001` invoice numbers, 80 mm receipt and A4 tax invoice.
@@ -90,7 +90,7 @@ php artisan test
 
 The suite covers VAT-inclusive/exclusive calculations, invoice discounts, split-payment sales, stock decrementing, cost visibility, manager approval, Quick Add, invoice privacy, credit notes/restocking, and role restrictions.
 
-Current result: **15 tests passing** (including VAT, split payments, discounts, Quick Add, returns and cost-privacy checks).
+Current result: **17 tests passing** (including VAT, split payments, discounts, Quick Add, new vehicle brand/model creation, returns and cost-privacy checks).
 
 ## Key project files
 

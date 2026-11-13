@@ -172,6 +172,59 @@ class PosFlowTest extends TestCase
             ->assertSee('BP-101');
     }
 
+    public function test_quick_add_saves_a_new_part_brand_and_vehicle_fitment(): void
+    {
+        $response = $this->actingAs($this->cashier())->postJson('/api/pos/quick-add', [
+            'name' => 'Genesis G80 Brake Pad',
+            'primary_part_number' => 'GEN-001',
+            'selling_price' => 180,
+            'secret_cost_code' => 'GEN',
+            'stock_qty' => 2,
+            'brand' => 'ACME Parts',
+            'vehicle_brand' => 'Genesis',
+            'vehicle_model' => 'G80',
+            'year_from' => 2021,
+            'year_to' => 2024,
+            'mapped_part_number' => 'GEN-BP-001',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('product.brand', 'ACME Parts')
+            ->assertJsonPath('product.fitments.0.brand', 'Genesis')
+            ->assertJsonPath('product.fitments.0.model', 'G80');
+
+        $this->assertDatabaseHas('car_brands', ['name' => 'Genesis']);
+        $this->assertDatabaseHas('car_models', ['name' => 'G80']);
+        $this->assertDatabaseHas('products', ['primary_part_number' => 'GEN-001', 'brand' => 'ACME Parts']);
+        $this->assertDatabaseHas('product_fitments', ['mapped_part_number' => 'GEN-BP-001']);
+
+        $this->actingAs($this->cashier())->getJson('/api/pos/search?q=Genesis%20G80')
+            ->assertOk()
+            ->assertJsonPath('data.0.primary_part_number', 'GEN-001');
+    }
+
+    public function test_owner_can_add_a_fitment_with_a_new_vehicle_brand_and_model(): void
+    {
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+
+        $response = $this->actingAs(User::where('email', 'owner@gitgadgets.test')->firstOrFail())
+            ->post(route('products.fitments.store', $product), [
+                'vehicle_brand' => 'BYD',
+                'vehicle_model' => 'Seal',
+                'year_from' => 2023,
+                'year_to' => 2025,
+                'mapped_part_number' => 'BYD-BP-101',
+            ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('car_brands', ['name' => 'BYD']);
+        $this->assertDatabaseHas('car_models', ['name' => 'Seal']);
+        $this->assertDatabaseHas('product_fitments', [
+            'product_id' => $product->id,
+            'mapped_part_number' => 'BYD-BP-101',
+        ]);
+    }
+
     public function test_cashier_totals_endpoint_never_returns_cost(): void
     {
         $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();

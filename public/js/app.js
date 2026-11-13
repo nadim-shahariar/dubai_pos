@@ -32,6 +32,29 @@
         filterModels();
     }
 
+
+    const fitBrand = document.querySelector('[data-vehicle-brand]');
+    const fitModel = document.querySelector('[data-vehicle-model]');
+    if (fitBrand && fitModel) {
+        const catalog = Array.isArray(window.VEHICLE_CATALOG) ? window.VEHICLE_CATALOG : [];
+        const list = document.querySelector('#fitment-model-list');
+        const syncFitmentModels = () => {
+            if (!list) return;
+            list.innerHTML = '';
+            const name = fitBrand.value.trim().toLowerCase();
+            const brand = catalog.find(b => String(b.name).toLowerCase() === name);
+            if (!brand) return;
+            (brand.models || []).forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                list.appendChild(option);
+            });
+        };
+        fitBrand.addEventListener('input', syncFitmentModels);
+        fitBrand.addEventListener('change', syncFitmentModels);
+        syncFitmentModels();
+    }
+
     document.querySelectorAll('[data-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));

@@ -46,6 +46,7 @@ class PosController extends Controller
             'prices_include_vat' => Pos::pricesIncludeVat(),
             'discount_limit' => Pos::cashierDiscountLimit(),
             'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'part_brands' => Product::query()->whereNotNull('brand')->where('brand', '<>', '')->distinct()->orderBy('brand')->pluck('brand'),
             'vehicles' => $vehicles,
             'holds_count' => PosHold::where('user_id', $user->id)->where('status', 'open')->count(),
         ];

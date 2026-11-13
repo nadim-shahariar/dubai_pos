@@ -77,8 +77,8 @@ class PosApiController extends Controller
             'brand' => ['nullable', 'string', 'max:80'],
             'barcode' => ['nullable', 'string', 'max:64', 'unique:products,barcode'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
-            'fitment_brand_id' => ['nullable', 'exists:car_brands,id'],
-            'fitment_model_id' => ['nullable', 'exists:car_models,id'],
+            'vehicle_brand' => ['nullable', 'string', 'max:60', 'required_with:vehicle_model'],
+            'vehicle_model' => ['nullable', 'string', 'max:80', 'required_with:vehicle_brand'],
             'year_from' => ['nullable', 'integer', 'between:1950,2100'],
             'year_to' => ['nullable', 'integer', 'between:1950,2100', 'gte:year_from'],
             'mapped_part_number' => ['nullable', 'string', 'max:50'],
@@ -103,14 +103,12 @@ class PosApiController extends Controller
                 'track_stock' => true,
             ]);
 
-            if (! empty($data['fitment_brand_id']) && ! empty($data['fitment_model_id'])) {
-                $model = CarModel::findOrFail($data['fitment_model_id']);
-                if ((int) $model->car_brand_id !== (int) $data['fitment_brand_id']) {
-                    throw ValidationException::withMessages(['fitment_model_id' => 'The model does not belong to the selected brand.']);
-                }
+            if (! empty($data['vehicle_brand']) && ! empty($data['vehicle_model'])) {
+                $brand = CarBrand::findOrCreateByName($data['vehicle_brand']);
+                $model = CarModel::findOrCreateForBrand($brand, $data['vehicle_model']);
                 $product->fitments()->create([
-                    'car_brand_id' => $data['fitment_brand_id'],
-                    'car_model_id' => $data['fitment_model_id'],
+                    'car_brand_id' => $brand->id,
+                    'car_model_id' => $model->id,
                     'year_from' => $data['year_from'] ?? 2000,
                     'year_to' => $data['year_to'] ?? now()->year,
                     'mapped_part_number' => $data['mapped_part_number'] ?? null,

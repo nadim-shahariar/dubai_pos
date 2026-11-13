@@ -28,7 +28,12 @@
                 <div class="field"><label>Product name *</label><input name="name" value="{{ old('name', $product->name) }}" required maxlength="150" placeholder="Front Brake Pad Set">@error('name')<div class="error">{{ $message }}</div>@enderror</div>
                 <div class="field"><label>Arabic name</label><input name="name_ar" value="{{ old('name_ar', $product->name_ar) }}" maxlength="150" placeholder="Optional"></div>
                 <div class="field"><label>Category</label><select name="category_id"><option value="">Uncategorised</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected(old('category_id', $product->category_id) == $category->id)>{{ $category->name }}</option>@endforeach</select></div>
-                <div class="field"><label>Part brand / manufacturer</label><input name="brand" value="{{ old('brand', $product->brand) }}" maxlength="80" placeholder="Denso, Bosch, Toyota Genuine"></div>
+                <div class="field">
+                    <label>Part brand / manufacturer</label>
+                    <input name="brand" value="{{ old('brand', $product->brand) }}" list="part-brand-options" maxlength="80" placeholder="Denso, Bosch, Toyota Genuine" autocomplete="off">
+                    <datalist id="part-brand-options">@foreach($partBrands as $partBrand)<option value="{{ $partBrand }}"></option>@endforeach</datalist>
+                    <div class="hint">Pick a saved brand or type a new one. It is saved with the product.</div>
+                </div>
                 <div class="field"><label>Unit</label><input name="unit" value="{{ old('unit', $product->unit ?: 'piece') }}" required maxlength="20"></div>
                 <div class="field"><label>Bin / shelf location</label><input name="bin_location" value="{{ old('bin_location', $product->bin_location) }}" maxlength="50" placeholder="A-12-3"></div>
                 <div class="field span-2"><label>Description</label><textarea name="description" maxlength="1000" placeholder="Specification, position, warranty notes…">{{ old('description', $product->description) }}</textarea></div>
@@ -97,8 +102,16 @@
                 </div>
                 <form method="POST" action="{{ route('products.fitments.store', $product) }}" class="inline-form">
                     @csrf
-                    <div class="field"><label>Brand</label><select name="car_brand_id" data-brand-select required><option value="">Brand</option>@foreach($brands as $brand)<option value="{{ $brand->id }}">{{ $brand->name }}</option>@endforeach</select></div>
-                    <div class="field"><label>Model</label><select name="car_model_id" data-model-select required><option value="">Model</option>@foreach($brands as $brand)@foreach($brand->models as $model)<option value="{{ $model->id }}" data-brand="{{ $brand->id }}">{{ $model->name }}</option>@endforeach @endforeach</select></div>
+                    <div class="field">
+                        <label>Brand</label>
+                        <input name="vehicle_brand" data-vehicle-brand list="fitment-brand-list" required maxlength="60" placeholder="Toyota" autocomplete="off">
+                        <datalist id="fitment-brand-list">@foreach($brands as $brand)<option value="{{ $brand->name }}"></option>@endforeach</datalist>
+                    </div>
+                    <div class="field">
+                        <label>Model</label>
+                        <input name="vehicle_model" data-vehicle-model list="fitment-model-list" required maxlength="80" placeholder="Camry" autocomplete="off">
+                        <datalist id="fitment-model-list"></datalist>
+                    </div>
                     <div class="field" style="max-width:86px"><label>From</label><input name="year_from" type="number" min="1950" max="2100" required value="2018"></div>
                     <div class="field" style="max-width:86px"><label>To</label><input name="year_to" type="number" min="1950" max="2100" required value="2024"></div>
                     <div class="field"><label>Mapped no.</label><input name="mapped_part_number" maxlength="50" placeholder="Optional"></div>
@@ -145,4 +158,8 @@
 @else
     <div class="alert alert-info mt-3">Save the product first, then add vehicle fitments and cross-references.</div>
 @endif
+
+<script>
+    window.VEHICLE_CATALOG = @json($brands->map(fn ($brand) => ['name' => $brand->name, 'models' => $brand->models->pluck('name')->values()])->values());
+</script>
 @endsection
