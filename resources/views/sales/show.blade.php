@@ -68,6 +68,8 @@
             <div class="card-body">
                 <div class="main-cell">{{ $sale->customer_name }}</div>
                 <div class="small muted">{{ $sale->customer_trn ? 'TRN '.$sale->customer_trn : 'No TRN recorded' }}</div>
+                @if($sale->person_name)<div class="small mt-1">Person / Driver: {{ $sale->person_name }}</div>@endif
+                @if($sale->car_plate_number)<div class="small mt-1">Car plate number: {{ $sale->car_plate_number }}</div>@endif
                 @if($sale->vehicle)<div class="small mt-1">Vehicle: {{ $sale->vehicle }}</div>@endif
                 @if($sale->customer)<div class="small mt-1">{{ $sale->customer->phone }}<br>{{ $sale->customer->address }}</div>@endif
                 @if($sale->notes)<div class="alert alert-info mt-2">{{ $sale->notes }}</div>@endif

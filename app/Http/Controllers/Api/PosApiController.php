@@ -46,6 +46,7 @@ class PosApiController extends Controller
                     $sub->where('name', 'like', "%{$q}%")
                         ->orWhere('company_name', 'like', "%{$q}%")
                         ->orWhere('phone', 'like', "%{$q}%")
+                        ->orWhere('car_plate_number', 'like', "%{$q}%")
                         ->orWhere('trn', 'like', "%{$q}%");
                 });
             })
@@ -58,6 +59,7 @@ class PosApiController extends Controller
                 'company_name' => $customer->company_name,
                 'phone' => $customer->phone,
                 'trn' => $customer->trn,
+                'car_plate_number' => $customer->car_plate_number,
                 'credit_limit' => (float) $customer->credit_limit,
                 'outstanding' => $customer->outstandingBalance(),
             ]);
@@ -72,6 +74,7 @@ class PosApiController extends Controller
             'name' => ['required', 'string', 'max:150'],
             'company_name' => ['nullable', 'string', 'max:150'],
             'phone' => ['nullable', 'string', 'max:30'],
+            'car_plate_number' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:150'],
             'trn' => ['nullable', 'digits:15', 'unique:customers,trn'],
             'address' => ['nullable', 'string', 'max:1000'],
@@ -81,6 +84,7 @@ class PosApiController extends Controller
             'name' => $data['name'],
             'company_name' => $data['company_name'] ?? null,
             'phone' => $data['phone'] ?? null,
+            'car_plate_number' => $data['car_plate_number'] ?? null,
             'email' => $data['email'] ?? null,
             'trn' => $data['trn'] ?? null,
             'address' => $data['address'] ?? null,
@@ -97,6 +101,7 @@ class PosApiController extends Controller
                 'name' => $customer->company_name ?: $customer->name,
                 'contact' => $customer->company_name ? $customer->name : null,
                 'trn' => $customer->trn,
+                'car_plate_number' => $customer->car_plate_number,
                 'credit_limit' => 0,
                 'outstanding' => 0,
             ],
@@ -308,6 +313,7 @@ class PosApiController extends Controller
                 'company_name' => $customer->company_name,
                 'phone' => $customer->phone,
                 'trn' => $customer->trn,
+                'car_plate_number' => $customer->car_plate_number,
                 'credit_limit' => (float) $customer->credit_limit,
                 'outstanding' => $customer->outstandingBalance(),
             ] : null,
@@ -441,6 +447,8 @@ class PosApiController extends Controller
             'invoice_discount_value' => ['nullable', 'numeric', 'min:0'],
             'approval_pin' => ['nullable', 'string', 'max:20'],
             'vehicle' => ['nullable', 'string', 'max:150'],
+            'person_name' => ['nullable', 'string', 'max:150'],
+            'car_plate_number' => ['nullable', 'string', 'max:50'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 

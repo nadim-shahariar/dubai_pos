@@ -34,6 +34,7 @@ class PosController extends Controller
                 'name' => $customer->company_name ?: $customer->name,
                 'contact' => $customer->company_name ? $customer->name : null,
                 'trn' => $customer->trn,
+                'car_plate_number' => $customer->car_plate_number,
                 'credit_limit' => (float) $customer->credit_limit,
                 'outstanding' => (float) ($customer->outstanding_balance ?? 0),
             ]);

@@ -225,6 +225,8 @@ class SaleService
                 'customer_name' => $customer ? ($customer->company_name ?: $customer->name) : 'Walk-in Customer',
                 'customer_trn' => $customer?->trn,
                 'vehicle' => $data['vehicle'] ?? null,
+                'person_name' => trim((string) ($data['person_name'] ?? '')) ?: null,
+                'car_plate_number' => trim((string) (array_key_exists('car_plate_number', $data) ? $data['car_plate_number'] : $customer?->car_plate_number)) ?: null,
                 'notes' => $data['notes'] ?? null,
                 'sold_at' => now(),
             ]);

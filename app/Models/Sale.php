@@ -10,7 +10,7 @@ class Sale extends Model
         'invoice_number', 'customer_id', 'user_id', 'shift_id', 'approved_by', 'status', 'payment_status',
         'price_mode', 'subtotal', 'line_discount_total', 'invoice_discount_total', 'discount_total', 'net_total', 'vat_total', 'total',
         'paid_total', 'change_total', 'balance_due', 'customer_name', 'customer_trn',
-        'vehicle', 'notes', 'sold_at',
+        'vehicle', 'notes', 'sold_at', 'car_plate_number', 'person_name',
     ];
 
     protected function casts(): array

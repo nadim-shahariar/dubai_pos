@@ -24,7 +24,7 @@
             <tbody>
             @forelse($customers as $customer)
                 <tr>
-                    <td><div class="main-cell">{{ $customer->company_name ?: $customer->name }}</div><div class="sub">{{ $customer->company_name ? $customer->name : ($customer->email ?: 'Individual') }}</div></td>
+                    <td><div class="main-cell">{{ $customer->company_name ?: $customer->name }}</div>@if($customer->car_plate_number)<div class="sub">Car plate: {{ $customer->car_plate_number }}</div>@endif<div class="sub">{{ $customer->company_name ? $customer->name : ($customer->email ?: 'Individual') }}</div></td>
                     <td>{{ $customer->phone ?: '—' }}</td>
                     <td class="mono">{{ $customer->trn ?: '—' }}</td>
                     <td>AED {{ number_format((float) $customer->credit_limit, 2) }}</td>

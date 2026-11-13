@@ -8,7 +8,7 @@ class Customer extends Model
 {
     protected $fillable = [
         'name', 'company_name', 'phone', 'email', 'trn', 'address', 'credit_limit',
-        'payment_terms_days', 'is_active', 'notes',
+        'payment_terms_days', 'is_active', 'notes', 'car_plate_number',
     ];
 
     protected function casts(): array

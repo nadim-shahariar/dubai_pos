@@ -21,6 +21,7 @@ class CustomerController extends Controller
                     $sub->where('name', 'like', "%{$q}%")
                         ->orWhere('company_name', 'like', "%{$q}%")
                         ->orWhere('phone', 'like', "%{$q}%")
+                        ->orWhere('car_plate_number', 'like', "%{$q}%")
                         ->orWhere('trn', 'like', "%{$q}%");
                 });
             })
@@ -114,6 +115,7 @@ class CustomerController extends Controller
             'name' => ['required', 'string', 'max:150'],
             'company_name' => ['nullable', 'string', 'max:150'],
             'phone' => ['nullable', 'string', 'max:30'],
+            'car_plate_number' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:150'],
             'trn' => ['nullable', 'digits:15', Rule::unique('customers')->ignore($customer?->id)],
             'address' => ['nullable', 'string', 'max:1000'],

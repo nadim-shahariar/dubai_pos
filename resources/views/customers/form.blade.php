@@ -19,6 +19,7 @@
                 <div class="field"><label>Contact name *</label><input name="name" value="{{ old('name', $customer->name) }}" required maxlength="150"></div>
                 <div class="field"><label>Company name</label><input name="company_name" value="{{ old('company_name', $customer->company_name) }}" maxlength="150"></div>
                 <div class="field"><label>Phone</label><input name="phone" value="{{ old('phone', $customer->phone) }}" maxlength="30"></div>
+                <div class="field"><label for="car-plate-number">Car plate number (optional)</label><input id="car-plate-number" name="car_plate_number" value="{{ old('car_plate_number', $customer->car_plate_number) }}" maxlength="50" placeholder="e.g. Dubai A 12345"></div>
                 <div class="field"><label>Email</label><input name="email" type="email" value="{{ old('email', $customer->email) }}" maxlength="150"></div>
                 <div class="field"><label>TRN (15 digits)</label><input name="trn" value="{{ old('trn', $customer->trn) }}" maxlength="15" inputmode="numeric" placeholder="100123456789012"><div class="hint">Required on a full B2B tax invoice.</div></div>
                 @if(auth()->user()->canApprove())

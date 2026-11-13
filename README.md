@@ -184,3 +184,11 @@ This is a working MVP, not the final production deployment. Before going live:
 4. Move to MySQL, configure a nightly encrypted backup, and test a restore.
 5. Put the app behind HTTPS and restrict the back office to the shop network/VPN.
 6. Load the real catalogue, fitments and opening stock.
+
+## Invoice format and customer vehicles
+
+The A4 invoice uses the reference layout with a blue customer/details panel, item tax columns, total amount in words and a Received by signature line. Company information comes from Settings. Credit collections and remaining balances are retained.
+
+Customers can save an optional car plate number. At the POS, the invoice plate pre-fills from the customer and can be changed or cleared. A separate optional Person / Driver field identifies the visitor acting for a company. The company remains the billing customer. Both fields are saved on the sale; blank fields do not print. Updating customer details does not rewrite invoice snapshots.
+
+After deploying, run `php artisan config:clear`, `php artisan migrate --force`, `php artisan config:cache`, and `php artisan view:cache`. On this cPanel account use `/opt/cpanel/ea-php82/root/usr/bin/php` in place of `php`. Back up the database first; do not use migrate:fresh.

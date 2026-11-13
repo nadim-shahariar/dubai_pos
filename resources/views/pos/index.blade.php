@@ -13,6 +13,7 @@
                     @foreach($boot['customers'] as $customer)
                         <option value="{{ $customer['id'] }}"
                                 data-name="{{ $customer['name'] }}"
+                                data-plate="{{ $customer['car_plate_number'] }}"
                                 data-trn="{{ $customer['trn'] }}"
                                 data-credit="{{ $customer['credit_limit'] }}"
                                 data-outstanding="{{ $customer['outstanding'] }}">
@@ -21,6 +22,8 @@
                     @endforeach
                 </select>
                 <button class="btn btn-secondary btn-sm" id="new-customer-btn" type="button">+ New customer</button>
+                <label for="invoice-person-name">Person / Driver (optional)</label><input id="invoice-person-name" class="entry-input" maxlength="150" placeholder="Person visiting for this company" style="width:210px">
+                <label for="invoice-car-plate">Car plate (optional)</label><input id="invoice-car-plate" class="entry-input" maxlength="50" placeholder="e.g. Dubai A 12345" style="width:180px">
                 <div class="entry-customer-meta" id="customer-meta">Cash sale · no TRN</div>
             </div>
             <div class="entry-meta">
@@ -157,6 +160,7 @@
             <div class="modal-body">
                 <div class="form-grid">
                     <div class="field"><label>Contact name *</label><input name="name" id="new-customer-name" required maxlength="150" placeholder="Omar Al Suwaidi"></div>
+                    <div class="field"><label>Car plate number (optional)</label><input name="car_plate_number" maxlength="50" placeholder="e.g. Dubai A 12345"></div>
                     <div class="field"><label>Phone</label><input name="phone" maxlength="30" placeholder="+971 50 000 0000"></div>
                     <div class="field"><label>Company name</label><input name="company_name" maxlength="150" placeholder="Al Quoz Garage LLC"></div>
                     <div class="field"><label>TRN (15 digits)</label><input name="trn" maxlength="15" inputmode="numeric" placeholder="Optional"></div>

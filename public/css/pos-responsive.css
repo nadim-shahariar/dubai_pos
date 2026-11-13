@@ -1,0 +1,122 @@
+/* POS layout corrections. Loaded after app.css for both counter layouts. */
+.pos-layout {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+}
+.pos-main,
+.pos-main-simple,
+.pos-panel,
+.simple-pos,
+.entry-card,
+.entry-summary {
+    min-width: 0;
+}
+.pos-main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(240px, .8fr);
+    grid-template-rows: minmax(0, 1fr);
+}
+.pos-topbar { min-width: 0; }
+.pos-context { min-width: 0; }
+.pos-context b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pos-top-actions { flex-shrink: 0; }
+.pos-topbar .brand { flex-shrink: 0; }
+.results-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 165px), 1fr)); }
+.product-card { min-width: 0; overflow-wrap: anywhere; }
+.customer-info { flex: 1; }
+.customer-avatar,
+.customer-actions { flex-shrink: 0; }
+.cart-scroll { overflow: auto; }
+.cart-table { min-width: 360px; }
+.cart-footer { flex-wrap: wrap; }
+.total-row b { overflow-wrap: anywhere; }
+.total-row.grand b { font-size: clamp(22px, 2.2vw, 30px); white-space: normal; }
+.simple-pos { grid-template-columns: minmax(0, 1fr) 280px; }
+.entry-head { align-items: flex-start; flex-wrap: wrap; }
+.entry-customer,
+.entry-meta { min-width: 0; }
+.entry-customer { flex: 1 1 320px; }
+.entry-customer select { min-width: 0; width: 240px; max-width: 100%; }
+.entry-meta { flex: 1 1 180px; }
+.entry-table-wrap { min-width: 0; overscroll-behavior-x: contain; }
+.entry-table { table-layout: fixed; min-width: 1120px; }
+.entry-table td { overflow-wrap: anywhere; }
+.entry-summary-body { min-height: 0; overflow-y: auto; }
+.entry-summary-foot { flex-shrink: 0; }
+.entry-help,
+.entry-shortcuts { overflow-wrap: anywhere; }
+.pos-body .modal-backdrop { padding: 16px; }
+.pos-body .modal { max-height: calc(100dvh - 32px); }
+.pos-body .modal form { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.pos-body .modal-head,
+.pos-body .modal-foot { flex-shrink: 0; }
+.pos-body .modal-body { min-height: 0; }
+.pos-body .modal-foot { flex-wrap: wrap; }
+
+@media (max-width: 1100px) {
+    .pos-body { overflow: auto; }
+    .pos-layout { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+    .pos-topbar { height: auto; min-height: 58px; flex-basis: auto; flex-wrap: wrap; gap: 10px 16px; padding: 12px; }
+    .pos-main {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+        grid-template-rows: minmax(420px, 60dvh) auto;
+        height: auto;
+        overflow: visible;
+    }
+    .pos-main > .totals-panel { grid-column: 1 / -1; }
+    .totals-body { overflow: visible; }
+    .simple-pos { grid-template-columns: minmax(0, 1fr); height: auto; }
+    .pos-main-simple { overflow: visible; }
+    .entry-card { min-height: 380px; }
+    .entry-table-wrap { min-height: 240px; max-height: 55vh; max-height: 55dvh; }
+    .entry-summary { min-height: 0; }
+    .entry-summary-body { overflow: visible; }
+}
+
+@media (max-width: 760px) {
+    .pos-topbar { gap: 10px; }
+    .pos-topbar .brand-name { display: block; font-size: 12px; }
+    .pos-topbar .brand-sub { display: block; }
+    .pos-top-actions { gap: 6px; }
+    .pos-top-actions .btn { padding: 7px 8px; font-size: 10px; }
+    .pos-context { order: 3; flex-basis: 100%; justify-content: space-between; }
+    .pos-clock { display: none; }
+    .pos-main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; padding: 8px; gap: 8px; }
+    .pos-main > .totals-panel { grid-column: auto; }
+    .results-scroll { max-height: 320px; }
+    .cart-panel { min-height: 360px; }
+    .cart-scroll { min-height: 240px; max-height: 60vh; }
+    .pos-main-simple { padding: 8px; }
+    .simple-pos { gap: 8px; }
+    .entry-head { padding: 12px; gap: 12px; }
+    .entry-customer { flex-basis: 100%; }
+    .entry-customer select { flex: 1 1 180px; width: auto; }
+    .entry-meta { flex-basis: 100%; justify-content: flex-start; text-align: left; }
+    .entry-actions { gap: 8px; }
+    .entry-help,
+    .entry-shortcuts { flex-basis: 100%; }
+    .pos-body .modal-backdrop { padding: 8px; }
+    .pos-body .modal { max-height: calc(100dvh - 16px); border-radius: 12px; }
+    .pos-body .modal-head,
+    .pos-body .modal-body,
+    .pos-body .modal-foot { padding: 12px; }
+    .pos-body .modal input,
+    .pos-body .modal select,
+    .pos-body .modal textarea,
+    .entry-customer select { font-size: 16px; }
+    .new-variant-labels { display: none; }
+    .new-variant-row,
+    .new-variant-row.with-cost { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .new-variant-row > * { min-width: 0; }
+}
+
+@media print {
+    .pos-body { overflow: visible; }
+    .pos-layout { height: auto; min-height: 0; }
+    .pos-main,
+    .simple-pos { display: block; }
+    .entry-table-wrap,
+    .cart-scroll,
+    .results-scroll { max-height: none; overflow: visible; }
+    .entry-table { min-width: 0; font-size: 9px; }
+}

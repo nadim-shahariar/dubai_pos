@@ -50,6 +50,7 @@
             id: Number(option.value),
             name: option.dataset.name || option.textContent.trim(),
             trn: option.dataset.trn || null,
+            car_plate_number: option.dataset.plate || null,
             credit_limit: Number(option.dataset.credit || 0),
             outstanding: Number(option.dataset.outstanding || 0),
         };
@@ -60,7 +61,11 @@
             ? `${c.trn ? 'TRN ' + c.trn : 'No TRN'} · credit limit ${money(c.credit_limit)} · outstanding ${money(c.outstanding)}`
             : 'Cash sale · no TRN';
     };
-    customerSelect.addEventListener('change', syncCustomerMeta);
+    customerSelect.addEventListener('change', () => {
+        syncCustomerMeta();
+        $('#invoice-car-plate').value = customer()?.car_plate_number || '';
+        $('#invoice-person-name').value = '';
+    });
     syncCustomerMeta();
 
 
@@ -82,10 +87,12 @@
             const option = new Option(c.name + (c.trn ? ' — ' + c.trn : ''), c.id);
             option.dataset.name = c.name;
             option.dataset.trn = c.trn || '';
+            option.dataset.plate = c.car_plate_number || '';
             option.dataset.credit = c.credit_limit;
             option.dataset.outstanding = c.outstanding;
             customerSelect.appendChild(option);
             customerSelect.value = String(c.id);
+            $('#invoice-car-plate').value = c.car_plate_number || '';
             syncCustomerMeta();
             closeModal('customer-modal');
             toast('Customer ' + c.name + ' created and selected.');
@@ -983,6 +990,8 @@
                 method: 'POST',
                 body: JSON.stringify({
                     customer_id: customer()?.id || null,
+                    person_name: $('#invoice-person-name').value.trim() || null,
+                    car_plate_number: $('#invoice-car-plate').value.trim() || null,
                     items,
                     payments: state.payments,
                     invoice_discount_type: 'none',
@@ -1016,6 +1025,8 @@
         $('#entry-body').innerHTML = '';
         addRow();
         customerSelect.value = '';
+        $('#invoice-car-plate').value = '';
+        $('#invoice-person-name').value = '';
         syncCustomerMeta();
         state.payments = [];
         recalc();

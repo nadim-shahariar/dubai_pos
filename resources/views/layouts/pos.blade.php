@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Point of Sale · {{ config('pos.name') }}</title>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/pos-responsive.css') }}?v={{ filemtime(public_path('css/pos-responsive.css')) }}">
     @stack('head')
 </head>
 <body class="pos-body">
@@ -46,8 +47,8 @@
 <script>
     window.POS_BOOT = @json($boot);
 </script>
-<script src="{{ asset('js/app.js') }}" defer></script>
-<script src="{{ asset('js/pos.js') }}" defer></script>
+<script src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}" defer></script>
+<script src="{{ asset('js/pos.js') }}?v={{ filemtime(public_path('js/pos.js')) }}" defer></script>
 @stack('scripts')
 </body>
 </html>

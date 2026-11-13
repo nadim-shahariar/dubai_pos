@@ -28,6 +28,8 @@
     <div>Date: {{ $sale->sold_at->format('d/m/Y H:i') }}</div>
     <div>Cashier: {{ $sale->user?->name }}</div>
     <div>Customer: {{ $sale->customer_name }}</div>
+    @if($sale->person_name)<div>Person / Driver: {{ $sale->person_name }}</div>@endif
+    @if($sale->car_plate_number)<div>Car plate number: {{ $sale->car_plate_number }}</div>@endif
     @if($sale->vehicle)<div>Vehicle: {{ $sale->vehicle }}</div>@endif
     <hr>
     @foreach($sale->items as $item)
