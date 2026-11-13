@@ -183,6 +183,29 @@ class PosFlowTest extends TestCase
 
 
 
+    public function test_storekeeper_can_quick_add_a_product_from_the_catalogue(): void
+    {
+        $storekeeper = User::where('email', 'store@gitgadgets.test')->firstOrFail();
+
+        $this->actingAs($storekeeper)->postJson('/api/pos/quick-add', [
+            'name' => 'Catalogue Quick Add',
+            'primary_part_number' => 'CAT-QA-001',
+            'selling_price' => 75,
+            'secret_cost_code' => 'CATQA',
+            'stock_qty' => 3,
+            'variants' => [[
+                'vehicle_brand' => 'Mazda',
+                'vehicle_model' => 'Mazda2',
+                'year_from' => 2020,
+                'year_to' => 2024,
+                'mapped_part_number' => 'CAT-QA-M2',
+            ]],
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('products', ['primary_part_number' => 'CAT-QA-001', 'cost_pending' => 1]);
+        $this->assertDatabaseHas('product_fitments', ['mapped_part_number' => 'CAT-QA-M2']);
+    }
+
     public function test_cashier_can_complete_a_credit_sale_for_a_customer(): void
     {
         $cashier = $this->cashier();

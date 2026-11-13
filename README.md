@@ -11,6 +11,7 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 - **Fitment-first catalogue** — one product, many vehicle fitments and OEM/cross-reference numbers. Search by part number, vehicle, year, cross-reference, name, or barcode.
 - **Secret cost code** — a manually entered code shown to counter staff. The numeric cost is permission-gated and never sent to a cashier's API response or printed on customer documents.
 - **Inline product creation** — when a product is not in the catalogue, create it from the sale row with SKU, secret buying code, selling price and opening stock. Vehicle variants can be selected in the row; the **＋** action duplicates the product for another variant.
+- **Catalogue quick add** — press **F2** on the catalogue page to open a compact product form with pricing, secret code, opening stock and multi-row vehicle variants, without leaving the list.
 - **Table POS** — customer selection, walk-in default, **new-customer creation from the POS**, product search, a click-to-select variant picker that can add several existing variants or create multiple new vehicle variants at once, **a variant builder for new products**, separate **cash/card and credit sale actions**, inline new-product rows, quantity, line discounts, price override with a reason, split payments and cash change.
 - **Variant part numbers** — every vehicle variant carries its own part number. The SKU column, invoice and receipt use the selected variant part number while retaining the parent product number.
 - **Variant buying price** — each new variant can carry a masked buying price. The value is stored on the variant and used for COGS; it is never shown in the sale table or on customer documents.
@@ -43,6 +44,10 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 **New product variant builder** — add vehicle variants while creating a new product from the POS:
 
 ![New product variants](screenshots/new-product-variants.png)
+
+**Catalogue quick add** — press F2 to create a product and its variants from the catalogue:
+
+![Catalogue quick add](screenshots/catalog-quick-add.png)
 
 **Cash & credit report** — counter sales, credit sales, collections and customer balances:
 
@@ -110,7 +115,7 @@ php artisan test
 
 The suite covers VAT-inclusive/exclusive calculations, invoice discounts, split-payment sales, stock decrementing, cost visibility, manager approval, Quick Add, invoice privacy, credit notes/restocking, and role restrictions.
 
-Current result: **30 tests passing** (including VAT, split payments, table POS, discounts, multi-variant product creation, variant snapshots, returns and cost-privacy checks).
+Current result: **31 tests passing** (including VAT, split payments, table POS, discounts, multi-variant product creation, variant snapshots, returns and cost-privacy checks).
 
 ## Key project files
 

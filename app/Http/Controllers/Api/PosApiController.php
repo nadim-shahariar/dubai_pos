@@ -115,7 +115,7 @@ class PosApiController extends Controller
 
     public function quickAdd(Request $request, StockService $stock, AuditService $audit, VehicleVariantService $variants)
     {
-        abort_unless($request->user()->canSell(), 403);
+        abort_unless($request->user()->canSell() || $request->user()->canManageCatalog(), 403);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'primary_part_number' => ['required', 'string', 'max:50', 'unique:products,primary_part_number'],

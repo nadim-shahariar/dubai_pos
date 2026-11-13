@@ -34,7 +34,13 @@ class ProductController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('products.index', compact('products', 'q'));
+        return view('products.index', [
+            'products' => $products,
+            'q' => $q,
+            'categories' => Category::orderBy('name')->get(),
+            'brands' => CarBrand::with('models')->orderBy('name')->get(),
+            'partBrands' => $this->partBrands(),
+        ]);
     }
 
     public function create()
