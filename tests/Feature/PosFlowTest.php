@@ -62,6 +62,29 @@ class PosFlowTest extends TestCase
         $this->assertDatabaseHas('stock_movements', ['product_id' => $product->id, 'type' => 'sale', 'qty_out' => 2]);
     }
 
+    public function test_sale_stores_the_selected_variant_snapshot(): void
+    {
+        $cashier = $this->cashier();
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+
+        $this->actingAs($cashier)->postJson('/api/pos/sales', [
+            'items' => [[
+                'product_id' => $product->id,
+                'qty' => 1,
+                'unit_price' => 125,
+                'variant_label' => 'Toyota Camry 2018–2024',
+                'variant_sku' => 'TOY-BP-001',
+            ]],
+            'payments' => [['method' => 'cash', 'amount' => 125, 'tendered' => 125]],
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('sale_items', [
+            'primary_part_number' => 'BP-101',
+            'variant_label' => 'Toyota Camry 2018–2024',
+            'variant_sku' => 'TOY-BP-001',
+        ]);
+    }
+
     public function test_cashier_search_hides_numeric_cost(): void
     {
         $response = $this->actingAs($this->cashier())->getJson('/api/pos/search?q=BP-101');
@@ -168,8 +191,8 @@ class PosFlowTest extends TestCase
 
         $this->actingAs($this->cashier())->get('/pos')
             ->assertOk()
-            ->assertSee('Find a part')
-            ->assertSee('BP-101');
+            ->assertSee('Product name / key')
+            ->assertSee('Walk-in Customer');
     }
 
     public function test_quick_add_saves_a_new_part_brand_and_vehicle_fitment(): void

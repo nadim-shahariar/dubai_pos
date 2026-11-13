@@ -23,6 +23,21 @@ class PosController extends Controller
             'models' => $brand->models->map(fn ($model) => ['id' => $model->id, 'name' => $model->name])->values(),
         ]);
 
+        $customers = Customer::query()
+            ->where('is_active', true)
+            ->withSum('sales as outstanding_balance', 'balance_due')
+            ->orderByRaw("COALESCE(NULLIF(company_name, ''), name)")
+            ->limit(500)
+            ->get()
+            ->map(fn (Customer $customer) => [
+                'id' => $customer->id,
+                'name' => $customer->company_name ?: $customer->name,
+                'contact' => $customer->company_name ? $customer->name : null,
+                'trn' => $customer->trn,
+                'credit_limit' => (float) $customer->credit_limit,
+                'outstanding' => (float) ($customer->outstanding_balance ?? 0),
+            ]);
+
         $boot = [
             'csrf' => csrf_token(),
             'user' => [
@@ -46,6 +61,7 @@ class PosController extends Controller
             'prices_include_vat' => Pos::pricesIncludeVat(),
             'discount_limit' => Pos::cashierDiscountLimit(),
             'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'customers' => $customers,
             'part_brands' => Product::query()->whereNotNull('brand')->where('brand', '<>', '')->distinct()->orderBy('brand')->pluck('brand'),
             'vehicles' => $vehicles,
             'holds_count' => PosHold::where('user_id', $user->id)->where('status', 'open')->count(),

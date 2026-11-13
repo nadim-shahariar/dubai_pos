@@ -55,7 +55,10 @@
             <tr>
                 <td>{{ $loop->iteration }}</td>
                 <td class="mono">{{ $item->primary_part_number }}</td>
-                <td>{{ $item->name }} @if($item->price_override)<div class="small">Price override: {{ $item->override_reason }}</div>@endif</td>
+                <td>{{ $item->name }}
+                    @if($item->variant_label)<div class="small">{{ $item->variant_label }} @if($item->variant_sku) · {{ $item->variant_sku }} @endif</div>@endif
+                    @if($item->price_override)<div class="small">Price override: {{ $item->override_reason }}</div>@endif
+                </td>
                 <td class="num">{{ (float) $item->qty }}</td>
                 <td class="num">{{ number_format((float) $item->unit_price, 2) }}</td>
                 <td class="num">{{ number_format((float) $item->discount_amount, 2) }}</td>

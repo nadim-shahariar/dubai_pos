@@ -4,14 +4,14 @@
 
 It is built around the two things a parts shop needs at the counter: **fitment-first search** and **hiding the real purchase cost from the customer**.
 
-![POS screen](screenshots/pos-cart.png)
+![POS screen](screenshots/pos-table.png)
 
 ## What is included
 
 - **Fitment-first catalogue** — one product, many vehicle fitments and OEM/cross-reference numbers. Search by part number, vehicle, year, cross-reference, name, or barcode.
 - **Secret cost code** — a manually entered code shown to counter staff. The numeric cost is permission-gated and never sent to a cashier's API response or printed on customer documents.
-- **Quick Add** — create a product, multiple vehicle variants in one table, price, secret code and opening stock without leaving the sale. Part brands and vehicle brands/models have saved suggestions; a new name is written to the database when you save.
-- **POS cart** — quantities, line discounts, order discounts, price override with a reason, hold/resume, split cash/card/credit/bank payments and cash change.
+- **Inline product creation** — when a product is not in the catalogue, create it from the sale row with SKU, secret buying code, selling price and opening stock. Vehicle variants can be selected in the row; the **＋** action duplicates the product for another variant.
+- **Table POS** — customer selection or walk-in, product search, variant selection, inline new-product rows, quantity, line discounts, price override with a reason, split cash/card/credit/bank payments and cash change.
 - **Approval controls** — discounts above the cashier limit and price overrides require a manager PIN (`1234` in the demo).
 - **UAE VAT invoices** — 5% VAT, VAT-inclusive or VAT-exclusive pricing, sequential `GG-2026-000001` invoice numbers, 80 mm receipt and A4 tax invoice.
 - **Stock ledger** — every sale, receipt, return, adjustment and opening quantity is written to an append-only movement history. Weighted-average cost on receipt.
@@ -24,13 +24,13 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 
 ## Screens
 
-| Dashboard | POS | Catalogue |
+| Dashboard | Table POS | Catalogue |
 |---|---|---|
-| ![](screenshots/dashboard.png) | ![](screenshots/pos-cart.png) | ![](screenshots/products.png) |
+| ![](screenshots/dashboard.png) | ![](screenshots/pos-table.png) | ![](screenshots/products.png) |
 
-| Tax invoice | VAT report | Quick Add |
+| Tax invoice | VAT report | Payment |
 |---|---|---|
-| ![](screenshots/invoice.png) | ![](screenshots/vat.png) | ![](screenshots/quick-add.png) |
+| ![](screenshots/invoice.png) | ![](screenshots/vat.png) | ![](screenshots/payment.png) |
 
 ## Demo accounts
 
@@ -90,7 +90,7 @@ php artisan test
 
 The suite covers VAT-inclusive/exclusive calculations, invoice discounts, split-payment sales, stock decrementing, cost visibility, manager approval, Quick Add, invoice privacy, credit notes/restocking, and role restrictions.
 
-Current result: **19 tests passing** (including VAT, split payments, discounts, multi-variant Quick Add, product form variants, returns and cost-privacy checks).
+Current result: **20 tests passing** (including VAT, split payments, table POS, discounts, multi-variant product creation, variant snapshots, returns and cost-privacy checks).
 
 ## Key project files
 

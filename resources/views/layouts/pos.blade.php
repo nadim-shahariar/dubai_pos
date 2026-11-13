@@ -38,7 +38,7 @@
         </div>
     </header>
 
-    <main class="pos-main">
+    <main class="@yield('main-class', 'pos-main')">
         @yield('content')
     </main>
 </div>

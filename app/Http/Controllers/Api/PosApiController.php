@@ -246,6 +246,8 @@ class PosApiController extends Controller
             'items.*.discount_type' => ['nullable', 'in:none,amount,percent'],
             'items.*.discount_value' => ['nullable', 'numeric', 'min:0'],
             'items.*.override_reason' => ['nullable', 'string', 'max:255'],
+            'items.*.variant_label' => ['nullable', 'string', 'max:150'],
+            'items.*.variant_sku' => ['nullable', 'string', 'max:50'],
             'payments' => ['required', 'array', 'min:1'],
             'payments.*.method' => ['required', 'in:cash,card,credit,bank_transfer'],
             'payments.*.amount' => ['required', 'numeric', 'min:0'],

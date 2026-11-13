@@ -32,7 +32,7 @@
                 <tbody>
                 @foreach($sale->items as $item)
                     <tr>
-                        <td><div class="main-cell">{{ $item->name }}</div><div class="sub mono">{{ $item->primary_part_number }} @if($item->price_override) · <span class="text-danger">price override</span> @endif</div></td>
+                        <td><div class="main-cell">{{ $item->name }}</div><div class="sub mono">{{ $item->primary_part_number }} @if($item->variant_label) · {{ $item->variant_label }} @endif @if($item->price_override) · <span class="text-danger">price override</span> @endif</div></td>
                         <td>{{ (float) $item->qty }}</td>
                         <td>AED {{ number_format((float) $item->unit_price, 2) }}</td>
                         <td>{{ (float) $item->discount_amount > 0 ? '- AED '.number_format((float) $item->discount_amount, 2) : '—' }}</td>
