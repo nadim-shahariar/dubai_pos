@@ -59,7 +59,7 @@ The seeder creates a cashier shift with AED 500 float and six sample invoices, s
 Requirements: PHP 8.2+, Composer, SQLite (bundled with PHP) or MySQL.
 
 ```bash
-cd git-gadgets-pos
+cd dubai_pos
 composer install
 cp .env.example .env
 php artisan key:generate
