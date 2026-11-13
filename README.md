@@ -12,6 +12,7 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 - **Secret cost code** — a manually entered code shown to counter staff. The numeric cost is permission-gated and never sent to a cashier's API response or printed on customer documents.
 - **Inline product creation** — when a product is not in the catalogue, create it from the sale row with SKU, secret buying code, selling price and opening stock. Vehicle variants can be selected in the row; the **＋** action duplicates the product for another variant.
 - **Table POS** — customer selection, walk-in default, **new-customer creation from the POS**, product search, a click-to-select variant picker that can add several existing variants or create multiple new vehicle variants at once, inline new-product rows, quantity, line discounts, price override with a reason, split cash/card/credit/bank payments and cash change.
+- **Variant part numbers** — every vehicle variant carries its own part number. The SKU column, invoice and receipt use the selected variant part number while retaining the parent product number.
 - **Hidden buying price** — owners and managers can enter a masked buying price for a new product from the row lock action. It is stored as the numeric cost and never displayed in the table or on customer documents.
 - **Keyboard-first** — F2 add row, F3 product search, F4 new customer, F9 payment, and `?` for the shortcut reference.
 - **Approval controls** — discounts above the cashier limit and price overrides require a manager PIN (`1234` in the demo).

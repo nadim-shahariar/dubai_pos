@@ -44,12 +44,18 @@ class VehicleVariantService
 
             $mapped = trim((string) ($row['mapped_part_number'] ?? ''));
 
+            if ($mapped === '') {
+                throw ValidationException::withMessages([
+                    "variants.{$index}.mapped_part_number" => 'A part number is required for each vehicle variant.',
+                ]);
+            }
+
             $normalised[] = [
                 'vehicle_brand' => $brand,
                 'vehicle_model' => $model,
                 'year_from' => $yearFrom,
                 'year_to' => $yearTo,
-                'mapped_part_number' => $mapped !== '' ? $mapped : null,
+                'mapped_part_number' => $mapped,
             ];
         }
 

@@ -54,7 +54,7 @@
         @foreach($sale->items as $item)
             <tr>
                 <td>{{ $loop->iteration }}</td>
-                <td class="mono">{{ $item->primary_part_number }}</td>
+                <td class="mono">{{ $item->variant_sku ?: $item->primary_part_number }}@if($item->variant_sku && $item->variant_sku !== $item->primary_part_number)<div class="small">Product {{ $item->primary_part_number }}</div>@endif</td>
                 <td>{{ $item->name }}
                     @if($item->variant_label)<div class="small">{{ $item->variant_label }} @if($item->variant_sku) · {{ $item->variant_sku }} @endif</div>@endif
                     @if($item->price_override)<div class="small">Price override: {{ $item->override_reason }}</div>@endif

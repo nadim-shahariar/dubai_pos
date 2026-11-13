@@ -255,8 +255,8 @@ class PosFlowTest extends TestCase
             'secret_cost_code' => 'MULTI',
             'stock_qty' => 3,
             'variants' => [
-                ['vehicle_brand' => 'Toyota', 'vehicle_model' => 'Hilux', 'year_from' => 2018, 'year_to' => 2024],
-                ['vehicle_brand' => 'Ford', 'vehicle_model' => 'F-150', 'year_from' => 2019, 'year_to' => 2024],
+                ['vehicle_brand' => 'Toyota', 'vehicle_model' => 'Hilux', 'year_from' => 2018, 'year_to' => 2024, 'mapped_part_number' => 'TOY-HILUX-001'],
+                ['vehicle_brand' => 'Ford', 'vehicle_model' => 'F-150', 'year_from' => 2019, 'year_to' => 2024, 'mapped_part_number' => 'FOR-F150-001'],
             ],
         ]);
 
@@ -264,7 +264,8 @@ class PosFlowTest extends TestCase
             ->assertJsonPath('product.fitments.0.model', 'Hilux')
             ->assertJsonPath('product.fitments.1.model', 'F-150');
 
-        $this->assertDatabaseHas('product_fitments', ['mapped_part_number' => null]);
+        $this->assertDatabaseHas('product_fitments', ['mapped_part_number' => 'TOY-HILUX-001']);
+        $this->assertDatabaseHas('product_fitments', ['mapped_part_number' => 'FOR-F150-001']);
         $this->assertSame(2, \App\Models\Product::where('primary_part_number', 'MULTI-001')->firstOrFail()->fitments()->count());
     }
 
@@ -286,8 +287,8 @@ class PosFlowTest extends TestCase
                 'is_active' => 1,
                 'track_stock' => 1,
                 'variants' => [
-                    ['vehicle_brand' => 'Kia', 'vehicle_model' => 'Sportage', 'year_from' => 2020, 'year_to' => 2024],
-                    ['vehicle_brand' => 'Hyundai', 'vehicle_model' => 'Tucson', 'year_from' => 2021, 'year_to' => 2024],
+                    ['vehicle_brand' => 'Kia', 'vehicle_model' => 'Sportage', 'year_from' => 2020, 'year_to' => 2024, 'mapped_part_number' => 'KIA-SPORT-001'],
+                    ['vehicle_brand' => 'Hyundai', 'vehicle_model' => 'Tucson', 'year_from' => 2021, 'year_to' => 2024, 'mapped_part_number' => 'HYU-TUC-001'],
                 ],
             ]);
 

@@ -239,10 +239,13 @@
         if (!fitment) return;
         tr._variant = {
             label: variantLabel(fitment),
-            sku: fitment.mapped_part_number || tr.querySelector('.entry-sku').value,
+            sku: fitment.mapped_part_number || tr._baseSku || tr.querySelector('.entry-sku').value,
         };
+        const skuInput = tr.querySelector('.entry-sku');
+        skuInput.value = tr._variant.sku;
+        skuInput.readOnly = true;
         setVariantInput(tr, `<button type="button" class="variant-picker selected" data-open-variants>
-            ${esc(tr._variant.label)}<span class="change">change / add</span>
+            ${esc(tr._variant.label)}<span class="change">${esc(tr._variant.sku)} · change / add</span>
         </button>`);
     };
 
@@ -258,6 +261,7 @@
         const stock = tr.querySelector('.entry-stock');
         const price = tr.querySelector('.entry-price');
         sku.value = product.primary_part_number;
+        tr._baseSku = product.primary_part_number;
         sku.readOnly = true;
         code.value = product.secret_cost_code;
         code.readOnly = true;
@@ -301,6 +305,7 @@
         price.value = 0;
         tr._fitments = [];
         tr._variant = null;
+        tr._baseSku = null;
         tr._cost = null;
         setVariantInput(tr, '<input class="entry-input entry-variant" placeholder="Variant" autocomplete="off">');
         tr.querySelector('.duplicate-variant').style.display = 'none';
@@ -416,7 +421,7 @@
             <input data-new-model list="variant-model-list" placeholder="Model" autocomplete="off">
             <input data-new-year-from type="number" min="1950" max="2100" value="2018" placeholder="From">
             <input data-new-year-to type="number" min="1950" max="2100" value="2024" placeholder="To">
-            <input data-new-mapped placeholder="Mapped SKU (optional)">
+            <input data-new-mapped placeholder="Part number *">
             <button type="button" class="remove" data-remove-new-variant>×</button>
         `;
         $('#new-variant-rows').appendChild(row);
@@ -451,7 +456,7 @@
                 const sku = fitment.mapped_part_number || tr.querySelector('.entry-sku').value;
                 return `<label class="variant-option">
                     <input type="checkbox" value="${index}" ${selectedLabel === label ? 'checked' : ''}>
-                    <span><span class="v-name">${esc(label)}</span><span class="v-meta">SKU ${esc(sku)}</span></span>
+                    <span><span class="v-name">${esc(label)}</span><span class="v-meta">Part no. ${esc(sku)}</span></span>
                 </label>`;
             }).join('')
             : '<div class="empty" style="padding:12px 0">No saved variants yet. Create the first one below.</div>';
@@ -479,6 +484,11 @@
         const invalid = newVariants.find(v => !v.vehicle_brand || !v.vehicle_model);
         if (invalid) {
             toast('Each new variant needs a vehicle brand and model.', 'error');
+            return;
+        }
+        const missingPart = newVariants.find(v => !v.mapped_part_number);
+        if (missingPart) {
+            toast('Each new variant needs its own part number.', 'error');
             return;
         }
         if (!selected.length && !newVariants.length) {

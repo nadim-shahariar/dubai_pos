@@ -68,7 +68,7 @@
             <td><input name="variants[${index}][vehicle_model]" value="${escapeAttribute(values.vehicle_model || '')}" list="variant-model-list" placeholder="Camry" autocomplete="off" data-variant-model></td>
             <td><input name="variants[${index}][year_from]" type="number" min="1950" max="2100" value="${escapeAttribute(values.year_from || 2018)}" class="variant-year"></td>
             <td><input name="variants[${index}][year_to]" type="number" min="1950" max="2100" value="${escapeAttribute(values.year_to || 2024)}" class="variant-year"></td>
-            <td><input name="variants[${index}][mapped_part_number]" value="${escapeAttribute(values.mapped_part_number || '')}" placeholder="Optional" maxlength="50"></td>
+            <td><input name="variants[${index}][mapped_part_number]" value="${escapeAttribute(values.mapped_part_number || '')}" placeholder="Part number" maxlength="50"></td>
             <td class="text-right"><button type="button" class="btn btn-ghost btn-sm text-danger" data-remove-variant>×</button></td>
         `;
         tbody.appendChild(tr);

@@ -28,7 +28,8 @@
     @if($sale->vehicle)<div>Vehicle: {{ $sale->vehicle }}</div>@endif
     <hr>
     @foreach($sale->items as $item)
-        <div><strong>{{ $item->primary_part_number }}</strong> {{ $item->name }}</div>
+        <div><strong>{{ $item->variant_sku ?: $item->primary_part_number }}</strong> {{ $item->name }}</div>
+        @if($item->variant_sku && $item->variant_sku !== $item->primary_part_number)<div class="r-small">Product {{ $item->primary_part_number }}</div>@endif
         @if($item->variant_label)<div class="r-small">{{ $item->variant_label }} @if($item->variant_sku) · {{ $item->variant_sku }} @endif</div>@endif
         <table><tr><td>{{ (float) $item->qty }} x {{ number_format((float) $item->unit_price, 2) }}</td><td class="r-right">{{ number_format((float) $item->line_total, 2) }}</td></tr>
         @if((float) $item->discount_amount > 0)<tr><td>Discount</td><td class="r-right">-{{ number_format((float) $item->discount_amount, 2) }}</td></tr>@endif</table>

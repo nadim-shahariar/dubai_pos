@@ -37,7 +37,7 @@
                     <tr>
                         <th style="width:20%">Product name / key</th>
                         <th style="width:15%">Variant</th>
-                        <th style="width:10%">SKU</th>
+                        <th style="width:10%">Part number</th>
                         <th style="width:8%">Buying code</th>
                         <th style="width:7%">Stock</th>
                         <th style="width:6%">Qty</th>
@@ -165,7 +165,7 @@
                 <div><strong>New vehicle variant</strong><div class="small muted">Add one or more new variants now. They are saved to this product.</div></div>
                 <button class="btn btn-secondary btn-sm" type="button" id="add-new-variant">+ New variant</button>
             </div>
-            <div class="new-variant-labels"><span>Vehicle brand</span><span>Model</span><span>Year from</span><span>Year to</span><span>Mapped SKU</span><span></span></div>
+            <div class="new-variant-labels"><span>Vehicle brand</span><span>Model</span><span>Year from</span><span>Year to</span><span>Part number *</span><span></span></div>
             <div id="new-variant-rows"></div>
         </div>
         <div class="modal-foot">
