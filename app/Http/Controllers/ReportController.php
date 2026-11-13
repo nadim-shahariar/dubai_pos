@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
+use App\Models\CustomerPayment;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -44,6 +46,135 @@ class ReportController extends Controller
         ];
 
         return view('reports.sales', compact('sales', 'returns', 'daily', 'totals', 'from', 'to'));
+    }
+
+
+    public function cashCredit(Request $request)
+    {
+        [$from, $to] = $this->range($request);
+
+        $sales = Sale::query()
+            ->with(['payments', 'collections', 'customer'])
+            ->whereBetween('sold_at', [$from, $to])
+            ->where('status', '!=', 'voided')
+            ->get();
+
+        $collections = CustomerPayment::query()
+            ->with(['customer', 'sale', 'user'])
+            ->whereBetween('paid_at', [$from, $to])
+            ->latest('paid_at')
+            ->get();
+
+        $atSaleByMethod = [];
+        foreach ($sales as $sale) {
+            foreach ($sale->payments as $payment) {
+                if ($payment->method === 'credit') {
+                    continue;
+                }
+                $atSaleByMethod[$payment->method] = ($atSaleByMethod[$payment->method] ?? 0) + (float) $payment->amount;
+            }
+        }
+
+        $collectionsByMethod = [];
+        foreach ($collections as $collection) {
+            $collectionsByMethod[$collection->method] = ($collectionsByMethod[$collection->method] ?? 0) + (float) $collection->amount;
+        }
+
+        $cashAtSale = array_sum($atSaleByMethod);
+        $creditSold = $sales->sum(fn (Sale $sale) => (float) $sale->payments->where('method', 'credit')->sum('amount'));
+        $collectedInPeriod = (float) $collections->sum('amount');
+        $outstanding = (float) Sale::query()
+            ->where('balance_due', '>', 0)
+            ->where('status', '!=', 'voided')
+            ->sum('balance_due');
+
+        $totals = [
+            'invoices' => $sales->count(),
+            'sales' => (float) $sales->sum('total'),
+            'cash_at_sale' => $cashAtSale,
+            'credit_sold' => $creditSold,
+            'collected' => $collectedInPeriod,
+            'outstanding' => $outstanding,
+            'at_sale_by_method' => $atSaleByMethod,
+            'collections_by_method' => $collectionsByMethod,
+        ];
+
+        $months = [];
+        $cursor = $from->copy()->startOfMonth();
+        $lastMonth = $to->copy()->startOfMonth();
+        while ($cursor->lte($lastMonth)) {
+            $key = $cursor->format('Y-m');
+            $monthSales = $sales->filter(fn (Sale $sale) => $sale->sold_at->format('Y-m') === $key);
+            $monthCollections = $collections->filter(fn (CustomerPayment $payment) => $payment->paid_at->format('Y-m') === $key);
+
+            $months[] = [
+                'month' => $cursor->format('M Y'),
+                'invoices' => $monthSales->count(),
+                'cash' => $monthSales->sum(fn (Sale $sale) => (float) $sale->payments->where('method', '!=', 'credit')->sum('amount')),
+                'credit' => $monthSales->sum(fn (Sale $sale) => (float) $sale->payments->where('method', 'credit')->sum('amount')),
+                'collected' => (float) $monthCollections->sum('amount'),
+                'balance' => (float) $monthSales->sum('balance_due'),
+            ];
+
+            $cursor->addMonth();
+        }
+
+        $customerRows = Customer::query()
+            ->with([
+                'collections',
+                'sales' => fn ($query) => $query->where('status', '!=', 'voided')->with(['payments', 'collections']),
+            ])
+            ->get()
+            ->map(function (Customer $customer) {
+                $creditSold = 0.0;
+                $outstanding = 0.0;
+                $buckets = ['current' => 0.0, 'days_1_30' => 0.0, 'days_31_60' => 0.0, 'days_61_90' => 0.0, 'days_90_plus' => 0.0];
+                $oldestDue = null;
+
+                foreach ($customer->sales as $sale) {
+                    $creditSold += (float) $sale->payments->where('method', 'credit')->sum('amount');
+                    $balance = (float) $sale->balance_due;
+                    if ($balance <= 0.009) {
+                        continue;
+                    }
+
+                    $outstanding += $balance;
+                    $due = $sale->sold_at->copy()->addDays((int) $customer->payment_terms_days);
+                    if (! $due->isPast()) {
+                        $buckets['current'] += $balance;
+                    } else {
+                        $days = (int) $due->diffInDays(now());
+                        if ($days <= 30) {
+                            $buckets['days_1_30'] += $balance;
+                        } elseif ($days <= 60) {
+                            $buckets['days_31_60'] += $balance;
+                        } elseif ($days <= 90) {
+                            $buckets['days_61_90'] += $balance;
+                        } else {
+                            $buckets['days_90_plus'] += $balance;
+                        }
+                    }
+
+                    if (! $oldestDue || $due->lt($oldestDue)) {
+                        $oldestDue = $due;
+                    }
+                }
+
+                return [
+                    'customer' => $customer,
+                    'credit_sold' => $creditSold,
+                    'collected' => (float) $customer->collections->sum('amount'),
+                    'outstanding' => $outstanding,
+                    'buckets' => $buckets,
+                    'oldest_due' => $oldestDue,
+                    'credit_limit' => (float) $customer->credit_limit,
+                ];
+            })
+            ->filter(fn ($row) => $row['credit_sold'] > 0 || $row['outstanding'] > 0)
+            ->sortByDesc('outstanding')
+            ->values();
+
+        return view('reports.cash-credit', compact('sales', 'collections', 'totals', 'months', 'customerRows', 'from', 'to'));
     }
 
     public function vat(Request $request)

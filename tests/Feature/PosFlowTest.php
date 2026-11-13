@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Customer;
+use App\Models\CustomerPayment;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -177,6 +179,91 @@ class PosFlowTest extends TestCase
         $this->assertDatabaseHas('returns', ['sale_id' => $sale->id, 'reason' => 'Wrong part']);
         $this->assertDatabaseHas('return_items', ['sale_item_id' => $item->id, 'qty' => 1]);
         $this->assertSame($before + 1, (float) $item->product->fresh()->stock_qty);
+    }
+
+
+    public function test_credit_collection_updates_invoice_balance_and_generates_a_receipt(): void
+    {
+        $cashier = $this->cashier();
+        $sale = Sale::where('balance_due', '>', 0)->firstOrFail();
+        $customer = Customer::findOrFail($sale->customer_id);
+        $originalBalance = (float) $sale->balance_due;
+
+        $response = $this->actingAs($cashier)->post('/customers/'.$customer->id.'/collections', [
+            'sale_id' => $sale->id,
+            'amount' => 40,
+            'method' => 'cash',
+            'reference' => 'COLLECT-1',
+        ]);
+
+        $payment = CustomerPayment::latest('id')->firstOrFail();
+        $response->assertRedirect(route('credit-payments.receipt', $payment));
+
+        $this->assertSame(40.0, (float) $payment->amount);
+        $this->assertStringStartsWith('CR-GG-', $payment->receipt_number);
+        $this->assertSame($originalBalance - 40, (float) $sale->fresh()->balance_due);
+        $this->assertSame('partial', $sale->fresh()->payment_status);
+        $this->assertSame($originalBalance - 40, (float) $payment->sale->balance_due);
+
+        $this->actingAs($cashier)->get(route('credit-payments.receipt', $payment))
+            ->assertOk()
+            ->assertSee($payment->receipt_number)
+            ->assertSee('Balance remaining');
+
+        $this->actingAs($cashier)->post('/customers/'.$customer->id.'/collections', [
+            'sale_id' => $sale->id,
+            'amount' => $originalBalance - 40,
+            'method' => 'card',
+        ])->assertRedirect();
+
+        $this->assertSame(0.0, (float) $sale->fresh()->balance_due);
+        $this->assertSame('paid', $sale->fresh()->payment_status);
+        $this->assertSame(2, CustomerPayment::where('sale_id', $sale->id)->count());
+    }
+
+    public function test_cash_credit_report_and_customer_statement_are_available(): void
+    {
+        $accountant = User::where('email', 'accounts@gitgadgets.test')->firstOrFail();
+        $sale = Sale::where('balance_due', '>', 0)->firstOrFail();
+
+        $this->actingAs($accountant)->get('/reports/cash-credit')
+            ->assertOk()
+            ->assertSee('Cash & Credit Report')
+            ->assertSee('Customer credit balances');
+
+        $this->actingAs($accountant)->get('/customers/'.$sale->customer_id.'/statement')
+            ->assertOk()
+            ->assertSee('Credit invoices')
+            ->assertSee($sale->invoice_number);
+    }
+
+    public function test_collection_cannot_exceed_the_invoice_balance(): void
+    {
+        $cashier = $this->cashier();
+        $sale = Sale::where('balance_due', '>', 0)->firstOrFail();
+        $customer = Customer::findOrFail($sale->customer_id);
+
+        $this->actingAs($cashier)->post('/customers/'.$customer->id.'/collections', [
+            'sale_id' => $sale->id,
+            'amount' => (float) $sale->balance_due + 1,
+            'method' => 'cash',
+        ])->assertSessionHasErrors('amount');
+
+        $this->assertSame(0, CustomerPayment::count());
+        $this->assertSame((float) $sale->balance_due, (float) $sale->fresh()->balance_due);
+    }
+
+    public function test_cashier_cannot_collect_against_another_customers_invoice(): void
+    {
+        $cashier = $this->cashier();
+        $sale = Sale::where('balance_due', '>', 0)->firstOrFail();
+        $other = Customer::create(['name' => 'Other Customer', 'credit_limit' => 1000, 'is_active' => true]);
+
+        $this->actingAs($cashier)->post('/customers/'.$other->id.'/collections', [
+            'sale_id' => $sale->id,
+            'amount' => 1,
+            'method' => 'cash',
+        ])->assertNotFound();
     }
 
     public function test_cashier_cannot_access_reports_or_the_catalogue_back_office(): void

@@ -58,6 +58,11 @@ class User extends Authenticatable
         return $this->hasRole('owner', 'manager', 'cashier');
     }
 
+    public function canCollectCredit(): bool
+    {
+        return $this->hasRole('owner', 'manager', 'cashier', 'accountant');
+    }
+
     public function canViewReports(): bool
     {
         return $this->hasRole('owner', 'manager', 'accountant');

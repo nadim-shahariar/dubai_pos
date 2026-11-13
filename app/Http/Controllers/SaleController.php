@@ -43,7 +43,7 @@ class SaleController extends Controller
     public function show(Sale $sale)
     {
         $this->authorizeSale($sale);
-        $sale->load(['items.returnItems', 'payments', 'returns.user', 'customer', 'user', 'shift']);
+        $sale->load(['items.returnItems', 'payments', 'collections', 'returns.user', 'customer', 'user', 'shift']);
 
         return view('sales.show', compact('sale'));
     }

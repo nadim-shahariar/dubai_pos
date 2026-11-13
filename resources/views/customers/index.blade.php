@@ -36,7 +36,7 @@
                         @endif
                     </td>
                     <td>{{ $customer->sales_count }}</td>
-                    <td class="text-right"><a class="btn btn-secondary btn-sm" href="{{ route('customers.edit', $customer) }}">Edit</a></td>
+                    <td class="text-right nowrap"><a class="btn btn-secondary btn-sm" href="{{ route('customers.statement', $customer) }}">Statement</a>@if(auth()->user()->canApprove()) <a class="btn btn-secondary btn-sm" href="{{ route('customers.edit', $customer) }}">Edit</a>@endif</td>
                 </tr>
             @empty
                 <tr><td colspan="7"><div class="empty"><strong>No customers found.</strong>Add a trade customer or use walk-in at the POS.</div></td></tr>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Sale;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -42,6 +43,55 @@ class CustomerController extends Controller
         $audit->log('customer.created', $customer, ['name' => $customer->name], $request->user());
 
         return redirect()->route('customers.index')->with('success', 'Customer created.');
+    }
+
+    public function statement(Customer $customer)
+    {
+        $customer->load([
+            'collections' => fn ($q) => $q->with(['sale', 'user'])->latest('paid_at'),
+            'sales' => fn ($q) => $q->where('status', '!=', 'voided')
+                ->with(['payments', 'collections'])
+                ->orderBy('sold_at'),
+        ]);
+
+        $invoices = $customer->sales->map(function (Sale $sale) use ($customer) {
+            $paidAtSale = (float) $sale->payments->where('method', '!=', 'credit')->sum('amount');
+            $creditSold = (float) $sale->payments->where('method', 'credit')->sum('amount');
+            $collected = (float) $sale->collections->sum('amount');
+            $dueDate = $sale->sold_at->copy()->addDays((int) $customer->payment_terms_days);
+            $balance = (float) $sale->balance_due;
+
+            return [
+                'sale' => $sale,
+                'paid_at_sale' => $paidAtSale,
+                'credit_sold' => $creditSold,
+                'collected' => $collected,
+                'balance' => $balance,
+                'due_date' => $dueDate,
+                'days_overdue' => $balance > 0 && $dueDate->isPast() ? $dueDate->diffInDays(now()) : 0,
+            ];
+        });
+
+        $totals = [
+            'invoiced' => (float) $customer->sales->sum('total'),
+            'paid_at_sale' => $invoices->sum('paid_at_sale'),
+            'credit_sold' => $invoices->sum('credit_sold'),
+            'collected' => (float) $customer->collections->sum('amount'),
+            'outstanding' => (float) $customer->sales->sum('balance_due'),
+        ];
+
+        $monthly = $invoices->groupBy(fn ($row) => $row['sale']->sold_at->format('Y-m'))->map(function ($rows, $month) {
+            return [
+                'month' => $month,
+                'invoices' => $rows->count(),
+                'invoiced' => $rows->sum(fn ($row) => (float) $row['sale']->total),
+                'credit_sold' => $rows->sum('credit_sold'),
+                'collected' => $rows->sum('collected'),
+                'balance' => $rows->sum('balance'),
+            ];
+        })->sortKeysDesc();
+
+        return view('customers.statement', compact('customer', 'invoices', 'totals', 'monthly'));
     }
 
     public function edit(Customer $customer)

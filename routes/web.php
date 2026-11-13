@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerPaymentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PosController;
@@ -57,6 +58,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
     });
 
+    Route::middleware('role:owner,manager,cashier,accountant')->group(function () {
+        Route::get('/customers/{customer}/statement', [CustomerController::class, 'statement'])->name('customers.statement');
+        Route::post('/customers/{customer}/collections', [CustomerPaymentController::class, 'store'])->name('customers.collections.store');
+        Route::get('/credit-payments/{payment}/receipt', [CustomerPaymentController::class, 'receipt'])->name('credit-payments.receipt');
+    });
+
     Route::middleware('role:owner,manager')->group(function () {
         Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
         Route::patch('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
@@ -89,6 +96,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/reports/vat', [ReportController::class, 'vat'])->name('reports.vat');
         Route::get('/reports/inventory', [ReportController::class, 'inventory'])->name('reports.inventory');
         Route::get('/reports/profit', [ReportController::class, 'profit'])->name('reports.profit');
+        Route::get('/reports/cash-credit', [ReportController::class, 'cashCredit'])->name('reports.cash-credit');
         Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
     });
 

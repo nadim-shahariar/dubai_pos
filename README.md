@@ -20,9 +20,9 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 - **UAE VAT invoices** — 5% VAT, VAT-inclusive or VAT-exclusive pricing, sequential `GG-2026-000001` invoice numbers, 80 mm receipt and A4 tax invoice.
 - **Stock ledger** — every sale, receipt, return, adjustment and opening quantity is written to an append-only movement history. Weighted-average cost on receipt.
 - **Returns & credit notes** — partial returns, restock decision, VAT reversal and a printable credit note linked to the original invoice.
-- **Customers & credit** — company TRNs, credit limits, outstanding balances; credit sales are blocked above limit.
+- **Customers & credit** — company TRNs, credit limits, outstanding balances; credit sales are blocked above limit. Customers get a printable credit statement, monthly credit view, aging and a **receipt for every partial or full collection**.
 - **Shifts & cash** — opening float, cash/card split, expected cash, blind close, variance, Z-style shift close.
-- **Reports** — sales, daily summary, VAT, gross profit by part and inventory valuation.
+- **Reports** — sales, daily summary, **cash vs credit**, monthly credit movement, customer aging, VAT, gross profit by part and inventory valuation.
 - **Roles** — owner, manager, cashier, storekeeper and accountant. Cost and profit views are restricted.
 - **Audit trail** — sales, discounts, returns, stock changes, settings and logins are recorded.
 
@@ -39,6 +39,14 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 **Variant picker** — select several existing variants or create multiple new ones at once:
 
 ![Variant picker](screenshots/variant-picker.png)
+
+**Cash & credit report** — counter sales, credit sales, collections and customer balances:
+
+![Cash and credit report](screenshots/cash-credit-report.png)
+
+**Customer credit statement** — monthly credit, invoice balances and collection action:
+
+![Customer credit statement](screenshots/credit-statement.png)
 
 ## Demo accounts
 
@@ -98,7 +106,7 @@ php artisan test
 
 The suite covers VAT-inclusive/exclusive calculations, invoice discounts, split-payment sales, stock decrementing, cost visibility, manager approval, Quick Add, invoice privacy, credit notes/restocking, and role restrictions.
 
-Current result: **24 tests passing** (including VAT, split payments, table POS, discounts, multi-variant product creation, variant snapshots, returns and cost-privacy checks).
+Current result: **28 tests passing** (including VAT, split payments, table POS, discounts, multi-variant product creation, variant snapshots, returns and cost-privacy checks).
 
 ## Key project files
 

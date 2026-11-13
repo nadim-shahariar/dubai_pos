@@ -14,6 +14,7 @@ class InvoiceNumber
         $documentPrefix = match ($type) {
             'credit_note' => 'CN-'.$prefix,
             'return' => 'RET-'.$prefix,
+            'collection' => 'CR-'.$prefix,
             default => $prefix,
         };
 

@@ -13,6 +13,9 @@
         <a class="btn btn-secondary" href="{{ route('sales.index') }}">Back to sales</a>
         <a class="btn btn-secondary" target="_blank" href="{{ route('sales.receipt', $sale) }}">80 mm receipt</a>
         <a class="btn" target="_blank" href="{{ route('sales.invoice', $sale) }}">A4 invoice</a>
+        @if($sale->balance_due > 0 && $sale->customer && auth()->user()->canCollectCredit())
+            <a class="btn btn-gold" href="{{ route('customers.statement', $sale->customer) }}#credit-invoices">Receive payment</a>
+        @endif
         @if($sale->status !== 'voided' && $sale->status !== 'refunded' && auth()->user()->canApprove())
             <a class="btn btn-gold" href="{{ route('sales.return', $sale) }}">Return / credit note</a>
         @endif
@@ -78,7 +81,15 @@
                     <div class="total-row"><span>{{ ucfirst(str_replace('_',' ', $payment->method)) }} @if($payment->reference)<span class="small muted">· {{ $payment->reference }}</span>@endif</span><b>AED {{ number_format((float) $payment->amount, 2) }}</b></div>
                 @endforeach
                 <div class="total-row"><span>Change</span><b>AED {{ number_format((float) $sale->change_total, 2) }}</b></div>
-                <div class="total-row"><span>Balance due</span><b>AED {{ number_format((float) $sale->balance_due, 2) }}</b></div>
+                @foreach($sale->collections as $collection)
+                    <div class="total-row">
+                        <span>Credit collection <span class="small muted">· {{ $collection->receipt_number }}</span>
+                            <a class="small" target="_blank" href="{{ route('credit-payments.receipt', $collection) }}">receipt →</a>
+                        </span>
+                        <b>AED {{ number_format((float) $collection->amount, 2) }}</b>
+                    </div>
+                @endforeach
+                <div class="total-row"><span>Balance due</span><b class="{{ $sale->balance_due > 0 ? 'text-danger' : 'text-success' }}">AED {{ number_format((float) $sale->balance_due, 2) }}</b></div>
             </div>
         </div>
 

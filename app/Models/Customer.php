@@ -21,6 +21,11 @@ class Customer extends Model
         return $this->hasMany(Sale::class);
     }
 
+    public function collections()
+    {
+        return $this->hasMany(CustomerPayment::class);
+    }
+
     public function outstandingBalance(): float
     {
         return (float) $this->sales()->where('balance_due', '>', 0)->sum('balance_due');

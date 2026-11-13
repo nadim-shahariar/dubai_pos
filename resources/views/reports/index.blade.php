@@ -21,6 +21,12 @@
         <p class="muted mt-1">Net sales minus cost of goods sold, ranked by profit and margin.</p>
         <span class="small text-teal">Open report →</span>
     </a>
+    <a class="card card-pad" href="{{ route('reports.cash-credit') }}" style="display:block;color:inherit">
+        <span class="badge badge-gold">Credit</span>
+        <h2 class="mt-1">Cash &amp; credit sales</h2>
+        <p class="muted mt-1">Cash/card vs credit sales, monthly movement, customer balances, aging and collections.</p>
+        <span class="small text-teal">Open report →</span>
+    </a>
     <a class="card card-pad" href="{{ route('reports.vat') }}" style="display:block;color:inherit">
         <span class="badge badge-gold">VAT</span>
         <h2 class="mt-1">VAT summary &amp; detail</h2>

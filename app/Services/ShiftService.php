@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CustomerPayment;
 use App\Models\SalePayment;
 use App\Models\SaleReturn;
 use App\Models\Shift;
@@ -39,10 +40,15 @@ class ShiftService
             ->where('returned_at', '<=', $shift->closed_at ?? now())
             ->sum('total');
 
+        $cashCollections = (float) CustomerPayment::query()
+            ->where('method', 'cash')
+            ->where('shift_id', $shift->id)
+            ->sum('amount');
+
         $in = (float) $shift->cashMovements()->where('direction', 'in')->sum('amount');
         $out = (float) $shift->cashMovements()->where('direction', 'out')->sum('amount');
 
-        return round((float) $shift->opening_float + $cashSales - $cashRefunds + $in - $out, 2);
+        return round((float) $shift->opening_float + $cashSales + $cashCollections - $cashRefunds + $in - $out, 2);
     }
 
     public function close(Shift $shift, float $countedCash, ?string $notes = null): Shift

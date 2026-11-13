@@ -35,6 +35,7 @@ class Sale extends Model
     public function shift() { return $this->belongsTo(Shift::class); }
     public function items() { return $this->hasMany(SaleItem::class); }
     public function payments() { return $this->hasMany(SalePayment::class); }
+    public function collections() { return $this->hasMany(CustomerPayment::class); }
     public function returns() { return $this->hasMany(SaleReturn::class); }
 
     public function isCredit(): bool

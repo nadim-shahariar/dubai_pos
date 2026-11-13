@@ -527,3 +527,4 @@ table.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .new-variant-row.with-cost { grid-template-columns: 1.05fr 1.05fr 60px 60px 1fr 82px 24px; }
 .new-variant-labels.with-cost { grid-template-columns: 1.05fr 1.05fr 60px 60px 1fr 82px 24px; }
 .new-variant-row input[type=password] { letter-spacing: .12em; }
+.text-gold { color: #8a5d00; }
