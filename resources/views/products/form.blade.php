@@ -67,6 +67,24 @@
         </div>
     </div>
 
+    @if(!$product->exists)
+        <div class="card mb-2">
+            <div class="card-head">
+                <div><h3>Vehicle variants / fitments</h3><div class="small muted">Optional. Add every vehicle that fits this part as a separate row.</div></div>
+                <button class="btn btn-secondary btn-sm" type="button" data-add-variant="product-variants">+ Add variant</button>
+            </div>
+            <div class="card-body">
+                <div class="table-wrap" style="border:1px solid var(--line);border-radius:9px">
+                    <table class="table" id="product-variants" data-variant-table style="margin:0">
+                        <thead><tr><th>Vehicle brand</th><th>Model</th><th>Year from</th><th>Year to</th><th>Mapped part number</th><th></th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="hint">Existing brands and models show as suggestions. A new name is saved when the product is saved.</div>
+            </div>
+        </div>
+    @endif
+
     <div class="flex justify-between items-center">
         <a class="btn btn-ghost" href="{{ route('products.index') }}">Cancel</a>
         <button class="btn btn-lg" type="submit">{{ $product->exists ? 'Save product' : 'Create product' }}</button>
@@ -100,22 +118,20 @@
                         </tbody>
                     </table>
                 </div>
-                <form method="POST" action="{{ route('products.fitments.store', $product) }}" class="inline-form">
+                <form method="POST" action="{{ route('products.fitments.store', $product) }}">
                     @csrf
-                    <div class="field">
-                        <label>Brand</label>
-                        <input name="vehicle_brand" data-vehicle-brand list="fitment-brand-list" required maxlength="60" placeholder="Toyota" autocomplete="off">
-                        <datalist id="fitment-brand-list">@foreach($brands as $brand)<option value="{{ $brand->name }}"></option>@endforeach</datalist>
+                    <div class="flex items-center justify-between gap-1 mb-1">
+                        <span class="small muted">Add one or more variants in the table, then save.</span>
+                        <button class="btn btn-secondary btn-sm" type="button" data-add-variant="fitment-variants">+ Add variant</button>
                     </div>
-                    <div class="field">
-                        <label>Model</label>
-                        <input name="vehicle_model" data-vehicle-model list="fitment-model-list" required maxlength="80" placeholder="Camry" autocomplete="off">
-                        <datalist id="fitment-model-list"></datalist>
+                    <div class="table-wrap" style="border:1px solid var(--line);border-radius:9px">
+                        <table class="table" id="fitment-variants" data-variant-table style="margin:0">
+                            <thead><tr><th>Vehicle brand</th><th>Model</th><th>Year from</th><th>Year to</th><th>Mapped no.</th><th></th></tr></thead>
+                            <tbody></tbody>
+                        </table>
                     </div>
-                    <div class="field" style="max-width:86px"><label>From</label><input name="year_from" type="number" min="1950" max="2100" required value="2018"></div>
-                    <div class="field" style="max-width:86px"><label>To</label><input name="year_to" type="number" min="1950" max="2100" required value="2024"></div>
-                    <div class="field"><label>Mapped no.</label><input name="mapped_part_number" maxlength="50" placeholder="Optional"></div>
-                    <button class="btn btn-secondary" type="submit">Add fitment</button>
+                    <div class="hint">Existing brands and models show as suggestions. New names are saved automatically.</div>
+                    <div class="form-actions"><button class="btn btn-secondary" type="submit">Save variants</button></div>
                 </form>
             </div>
         </div>

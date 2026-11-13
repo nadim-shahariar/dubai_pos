@@ -140,21 +140,19 @@
                         <datalist id="qa-part-brand-list">@foreach($boot['part_brands'] as $brand)<option value="{{ $brand }}"></option>@endforeach</datalist>
                         <div class="hint">Start typing to pick a saved brand, or type a new one and save it with the product.</div>
                     </div>
-                    <div class="field">
-                        <label>Vehicle brand</label>
-                        <input name="vehicle_brand" id="qa-fit-brand" list="qa-vehicle-brand-list" maxlength="60" placeholder="e.g. Toyota" autocomplete="off">
-                        <datalist id="qa-vehicle-brand-list">@foreach($boot['vehicles'] as $brand)<option value="{{ $brand['name'] }}"></option>@endforeach</datalist>
-                        <div class="hint">Saved brands appear as suggestions. A new name is saved when you create the product.</div>
+                    <div class="field span-2">
+                        <div class="flex items-center justify-between gap-1 mb-1">
+                            <label style="margin-bottom:0">Vehicle variants / fitments</label>
+                            <button type="button" class="btn btn-secondary btn-sm" data-add-variant="qa-variants">+ Add variant</button>
+                        </div>
+                        <div class="table-wrap" style="border:1px solid var(--line);border-radius:9px">
+                            <table class="table" id="qa-variants" data-variant-table style="margin:0">
+                                <thead><tr><th>Vehicle brand</th><th>Model</th><th>Year from</th><th>Year to</th><th>Mapped no.</th><th></th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div class="hint">Optional. Add every vehicle that fits this part as a separate row. Existing brands and models appear as suggestions; new names are saved to the database.</div>
                     </div>
-                    <div class="field">
-                        <label>Vehicle model</label>
-                        <input name="vehicle_model" id="qa-fit-model" list="qa-vehicle-model-list" maxlength="80" placeholder="e.g. Camry" autocomplete="off">
-                        <datalist id="qa-vehicle-model-list"></datalist>
-                        <div class="hint">Suggestions update from the selected brand. Type a new model to save it.</div>
-                    </div>
-                    <div class="field"><label>Year from</label><input name="year_from" id="qa-year-from" type="number" min="1950" max="2100" placeholder="2018"></div>
-                    <div class="field"><label>Year to</label><input name="year_to" id="qa-year-to" type="number" min="1950" max="2100" placeholder="2022"></div>
-                    <div class="field span-2"><label>Mapped part number (optional)</label><input name="mapped_part_number" id="qa-mapped" maxlength="50" placeholder="TOY-BP-001"></div>
                 </div>
                 <div class="quick-summary" id="qa-status">Duplicate checks run when you submit. The product is added to the cart immediately after creation.</div>
             </div>

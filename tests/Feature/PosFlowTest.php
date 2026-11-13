@@ -209,20 +209,70 @@ class PosFlowTest extends TestCase
 
         $response = $this->actingAs(User::where('email', 'owner@gitgadgets.test')->firstOrFail())
             ->post(route('products.fitments.store', $product), [
-                'vehicle_brand' => 'BYD',
-                'vehicle_model' => 'Seal',
-                'year_from' => 2023,
-                'year_to' => 2025,
-                'mapped_part_number' => 'BYD-BP-101',
+                'variants' => [
+                    ['vehicle_brand' => 'BYD', 'vehicle_model' => 'Seal', 'year_from' => 2023, 'year_to' => 2025, 'mapped_part_number' => 'BYD-BP-101'],
+                    ['vehicle_brand' => 'BYD', 'vehicle_model' => 'Atto 3', 'year_from' => 2023, 'year_to' => 2025, 'mapped_part_number' => 'BYD-BP-102'],
+                ],
             ]);
 
         $response->assertRedirect();
         $this->assertDatabaseHas('car_brands', ['name' => 'BYD']);
         $this->assertDatabaseHas('car_models', ['name' => 'Seal']);
-        $this->assertDatabaseHas('product_fitments', [
-            'product_id' => $product->id,
-            'mapped_part_number' => 'BYD-BP-101',
+        $this->assertDatabaseHas('car_models', ['name' => 'Atto 3']);
+        $this->assertDatabaseHas('product_fitments', ['product_id' => $product->id, 'mapped_part_number' => 'BYD-BP-101']);
+        $this->assertDatabaseHas('product_fitments', ['product_id' => $product->id, 'mapped_part_number' => 'BYD-BP-102']);
+    }
+
+    public function test_quick_add_accepts_multiple_variants_in_one_request(): void
+    {
+        $response = $this->actingAs($this->cashier())->postJson('/api/pos/quick-add', [
+            'name' => 'Multi Fitment Filter',
+            'primary_part_number' => 'MULTI-001',
+            'selling_price' => 75,
+            'secret_cost_code' => 'MULTI',
+            'stock_qty' => 3,
+            'variants' => [
+                ['vehicle_brand' => 'Toyota', 'vehicle_model' => 'Hilux', 'year_from' => 2018, 'year_to' => 2024],
+                ['vehicle_brand' => 'Ford', 'vehicle_model' => 'F-150', 'year_from' => 2019, 'year_to' => 2024],
+            ],
         ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('product.fitments.0.model', 'Hilux')
+            ->assertJsonPath('product.fitments.1.model', 'F-150');
+
+        $this->assertDatabaseHas('product_fitments', ['mapped_part_number' => null]);
+        $this->assertSame(2, \App\Models\Product::where('primary_part_number', 'MULTI-001')->firstOrFail()->fitments()->count());
+    }
+
+    public function test_owner_can_create_a_product_with_multiple_variants_in_one_form(): void
+    {
+        $response = $this->actingAs(User::where('email', 'owner@gitgadgets.test')->firstOrFail())
+            ->post('/products', [
+                'primary_part_number' => 'FORM-001',
+                'name' => 'Form Variant Part',
+                'category_id' => 1,
+                'brand' => 'Form Brand',
+                'unit' => 'piece',
+                'tax_rate' => 5,
+                'selling_price' => 100,
+                'cost_price' => 60,
+                'secret_cost_code' => 'FORM',
+                'stock_qty' => 2,
+                'reorder_level' => 1,
+                'is_active' => 1,
+                'track_stock' => 1,
+                'variants' => [
+                    ['vehicle_brand' => 'Kia', 'vehicle_model' => 'Sportage', 'year_from' => 2020, 'year_to' => 2024],
+                    ['vehicle_brand' => 'Hyundai', 'vehicle_model' => 'Tucson', 'year_from' => 2021, 'year_to' => 2024],
+                ],
+            ]);
+
+        $response->assertRedirect();
+        $product = Product::where('primary_part_number', 'FORM-001')->firstOrFail();
+        $this->assertSame(2, $product->fitments()->count());
+        $this->assertDatabaseHas('car_brands', ['name' => 'Kia']);
+        $this->assertDatabaseHas('car_models', ['name' => 'Sportage']);
     }
 
     public function test_cashier_totals_endpoint_never_returns_cost(): void

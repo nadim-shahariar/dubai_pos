@@ -324,28 +324,6 @@
     $('#customer-clear').addEventListener('click', () => setCustomer(null));
 
     // ---------------------------------------------------------------- quick add
-    const quickAddBrand = $('#qa-fit-brand');
-    const quickAddModel = $('#qa-fit-model');
-    const quickAddModelList = $('#qa-vehicle-model-list');
-
-    const syncQuickAddModels = (clearModel = false) => {
-        quickAddModelList.innerHTML = '';
-        if (clearModel) quickAddModel.value = '';
-
-        const name = quickAddBrand.value.trim().toLowerCase();
-        const brand = boot.vehicles.find(v => v.name.toLowerCase() === name);
-        if (!brand) return;
-
-        brand.models.forEach(model => {
-            const option = document.createElement('option');
-            option.value = model.name;
-            quickAddModelList.appendChild(option);
-        });
-    };
-    quickAddBrand.addEventListener('input', () => syncQuickAddModels(true));
-    quickAddBrand.addEventListener('change', () => syncQuickAddModels(true));
-
-
     const addDatalistOption = (selector, value) => {
         const list = $(selector);
         if (!list || !value) return;
@@ -363,7 +341,7 @@
         }
         (product.fitments || []).forEach(fitment => {
             if (fitment.brand) {
-                addDatalistOption('#qa-vehicle-brand-list', fitment.brand);
+                addDatalistOption('#variant-brand-list', fitment.brand);
                 let brand = boot.vehicles.find(v => v.name.toLowerCase() === String(fitment.brand).toLowerCase());
                 if (!brand) {
                     brand = { id: null, name: fitment.brand, models: [] };
@@ -381,7 +359,7 @@
         $('#qa-stock').value = 0;
         if ($('#qa-cost')) $('#qa-cost').value = 0;
         $('#qa-status').textContent = 'Duplicate checks run when you submit. The product is added to the cart immediately after creation.';
-        syncQuickAddModels(true);
+        window.resetVariantTable('qa-variants');
         openModal('quick-add-modal');
         setTimeout(() => $('#qa-name').focus(), 100);
     };
@@ -391,10 +369,13 @@
         e.preventDefault();
         const form = new FormData(e.target);
         const payload = {};
-        form.forEach((value, key) => { if (value !== '') payload[key] = value; });
-        ['selling_price', 'stock_qty', 'cost_price', 'year_from', 'year_to', 'category_id'].forEach(key => {
+        form.forEach((value, key) => {
+            if (value !== '' && !key.startsWith('variants[')) payload[key] = value;
+        });
+        ['selling_price', 'stock_qty', 'cost_price', 'category_id'].forEach(key => {
             if (payload[key] !== undefined) payload[key] = Number(payload[key]);
         });
+        payload.variants = window.collectVariantRows('qa-variants');
         try {
             $('#qa-status').textContent = 'Creating product…';
             const data = await api('/api/pos/quick-add', { method: 'POST', body: JSON.stringify(payload) });

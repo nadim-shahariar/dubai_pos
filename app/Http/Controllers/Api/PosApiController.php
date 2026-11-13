@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\CarBrand;
-use App\Models\CarModel;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\PosHold;
@@ -16,6 +14,7 @@ use App\Services\SaleService;
 use App\Services\SearchService;
 use App\Services\ShiftService;
 use App\Services\StockService;
+use App\Services\VehicleVariantService;
 use App\Support\Pos;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -64,7 +63,7 @@ class PosApiController extends Controller
         return response()->json(['data' => $customers]);
     }
 
-    public function quickAdd(Request $request, StockService $stock, AuditService $audit)
+    public function quickAdd(Request $request, StockService $stock, AuditService $audit, VehicleVariantService $variants)
     {
         abort_unless($request->user()->canSell(), 403);
         $data = $request->validate([
@@ -79,12 +78,13 @@ class PosApiController extends Controller
             'cost_price' => ['nullable', 'numeric', 'min:0'],
             'vehicle_brand' => ['nullable', 'string', 'max:60', 'required_with:vehicle_model'],
             'vehicle_model' => ['nullable', 'string', 'max:80', 'required_with:vehicle_brand'],
+            'variants' => ['nullable', 'array'],
             'year_from' => ['nullable', 'integer', 'between:1950,2100'],
             'year_to' => ['nullable', 'integer', 'between:1950,2100', 'gte:year_from'],
             'mapped_part_number' => ['nullable', 'string', 'max:50'],
         ]);
 
-        $product = DB::transaction(function () use ($request, $data, $stock, $audit) {
+        $product = DB::transaction(function () use ($request, $data, $stock, $audit, $variants) {
             $canViewCost = $request->user()->canViewCost();
             $cost = $canViewCost ? (float) ($data['cost_price'] ?? 0) : 0.0;
 
@@ -103,17 +103,17 @@ class PosApiController extends Controller
                 'track_stock' => true,
             ]);
 
+            $variantRows = $data['variants'] ?? [];
             if (! empty($data['vehicle_brand']) && ! empty($data['vehicle_model'])) {
-                $brand = CarBrand::findOrCreateByName($data['vehicle_brand']);
-                $model = CarModel::findOrCreateForBrand($brand, $data['vehicle_model']);
-                $product->fitments()->create([
-                    'car_brand_id' => $brand->id,
-                    'car_model_id' => $model->id,
+                $variantRows[] = [
+                    'vehicle_brand' => $data['vehicle_brand'],
+                    'vehicle_model' => $data['vehicle_model'],
                     'year_from' => $data['year_from'] ?? 2000,
                     'year_to' => $data['year_to'] ?? now()->year,
                     'mapped_part_number' => $data['mapped_part_number'] ?? null,
-                ]);
+                ];
             }
+            $variants->createMany($product, $variantRows);
 
             if ((float) ($data['stock_qty'] ?? 0) > 0) {
                 $stock->apply($product->fresh(), $request->user(), 'opening', (float) $data['stock_qty'], 0, $cost, 'quick_add', $product->id, 'Quick Add opening stock');

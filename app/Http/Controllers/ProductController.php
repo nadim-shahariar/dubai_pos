@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\CarBrand;
-use App\Models\CarModel;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\AuditService;
 use App\Services\StockService;
+use App\Services\VehicleVariantService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -47,15 +47,16 @@ class ProductController extends Controller
         ]);
     }
 
-    public function store(Request $request, StockService $stock, AuditService $audit)
+    public function store(Request $request, StockService $stock, AuditService $audit, VehicleVariantService $variants)
     {
         $data = $this->validated($request);
         $data['primary_part_number'] = strtoupper(trim($data['primary_part_number']));
         $data['secret_cost_code'] = strtoupper(trim($data['secret_cost_code']));
         $data['cost_pending'] = ! $request->user()->canViewCost();
 
-        $product = DB::transaction(function () use ($data, $request, $stock, $audit) {
+        $product = DB::transaction(function () use ($data, $request, $stock, $audit, $variants) {
             $product = Product::create($data);
+            $variants->createMany($product, $request->input('variants', []));
             if ((float) $request->input('stock_qty', 0) > 0 && $product->track_stock) {
                 $stock->apply($product->fresh(), $request->user(), 'opening', (float) $request->input('stock_qty'), 0, (float) $product->cost_price, 'opening', null, 'Opening stock');
             }
@@ -92,30 +93,15 @@ class ProductController extends Controller
         return redirect()->route('products.edit', $product)->with('success', 'Product updated.');
     }
 
-    public function storeFitment(Request $request, Product $product)
+    public function storeFitment(Request $request, Product $product, VehicleVariantService $variants)
     {
-        $data = $request->validate([
-            'vehicle_brand' => ['required', 'string', 'max:60'],
-            'vehicle_model' => ['required', 'string', 'max:80'],
-            'year_from' => ['required', 'integer', 'between:1950,2100'],
-            'year_to' => ['required', 'integer', 'between:1950,2100', 'gte:year_from'],
-            'engine' => ['nullable', 'string', 'max:50'],
-            'mapped_part_number' => ['nullable', 'string', 'max:50'],
-        ]);
+        $count = $variants->createMany($product, (array) $request->input('variants', []));
 
-        $brand = CarBrand::findOrCreateByName($data['vehicle_brand']);
-        $model = CarModel::findOrCreateForBrand($brand, $data['vehicle_model']);
+        if ($count === 0) {
+            return back()->withErrors(['variants' => 'Add at least one vehicle brand and model.']);
+        }
 
-        $product->fitments()->create([
-            'car_brand_id' => $brand->id,
-            'car_model_id' => $model->id,
-            'year_from' => $data['year_from'],
-            'year_to' => $data['year_to'],
-            'engine' => $data['engine'] ?? null,
-            'mapped_part_number' => $data['mapped_part_number'] ?? null,
-        ]);
-
-        return back()->with('success', 'Fitment added. '.$brand->name.' '.$model->name.' is now saved for future suggestions.');
+        return back()->with('success', $count.' vehicle variant'.($count === 1 ? '' : 's').' added. New brands and models are saved for suggestions.');
     }
 
     public function destroyFitment(Product $product, \App\Models\ProductFitment $fitment)
