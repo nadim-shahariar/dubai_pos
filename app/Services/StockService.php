@@ -23,26 +23,29 @@ class StockService
         ?ProductFitment $fitment = null,
     ): StockMovement {
         $before = (float) $product->stock_qty;
-        $balance = round($before + $qtyIn - $qtyOut, 3);
-
-        if ($balance < -0.0001) {
-            throw ValidationException::withMessages([
-                'stock' => "Not enough stock for {$product->primary_part_number}. Available: ".number_format($before, 3).', requested: '.number_format($qtyOut, 3).'.',
-            ]);
-        }
-
-        if ($fitment && $fitment->stock_qty !== null) {
-            $variantBefore = (float) $fitment->stock_qty;
+        if ($fitment) {
+            if ($fitment->product_id !== $product->id) {
+                throw ValidationException::withMessages(['stock' => 'Variant does not belong to this product.']);
+            }
+            // The selected SKU is the only source of sellable stock.
+            $variantBefore = (float) ($fitment->stock_qty ?? 0);
             $variantBalance = round($variantBefore + $qtyIn - $qtyOut, 3);
             if ($variantBalance < -0.0001) {
-                throw ValidationException::withMessages([
-                    'stock' => "Not enough stock for variant {$fitment->mapped_part_number}. Available: ".number_format($variantBefore, 3).', requested: '.number_format($qtyOut, 3).'.',
-                ]);
+                throw ValidationException::withMessages(['stock' => "Not enough stock for variant {$fitment->mapped_part_number}. Available: {$variantBefore}."]);
             }
             $fitment->stock_qty = $variantBalance;
             $fitment->save();
+            // A cached rollup for reports only; never used to approve a variant sale.
+            $balance = round((float) $product->fitments()->sum('stock_qty'), 3);
+        } else {
+            if ($product->fitments()->exists() && in_array($type, ['sale', 'purchase_receipt', 'adjustment_in', 'adjustment_out'], true)) {
+                throw ValidationException::withMessages(['stock' => 'Choose an individual variant for this stock movement.']);
+            }
+            $balance = round($before + $qtyIn - $qtyOut, 3);
+            if ($balance < -0.0001) {
+                throw ValidationException::withMessages(['stock' => "Not enough stock for {$product->primary_part_number}."]);
+            }
         }
-
         $product->stock_qty = $balance;
         $product->save();
 
@@ -55,6 +58,7 @@ class StockService
             'qty_out' => $qtyOut,
             'unit_cost' => $unitCost,
             'balance_after' => $balance,
+            'variant_balance_after' => $fitment ? $variantBalance : null,
             'reference_type' => $referenceType,
             'reference_id' => $referenceId,
             'note' => $note,

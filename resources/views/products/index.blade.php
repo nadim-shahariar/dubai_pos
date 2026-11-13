@@ -41,6 +41,10 @@
                     <td>
                         @if(!$product->track_stock)
                             <span class="badge badge-gray">Service</span>
+                        @elseif($product->fitments->isNotEmpty())
+                            @foreach($product->fitments as $variant)
+                                <div class="small"><strong>{{ $variant->mapped_part_number ?: ($variant->brand?->name.' '.$variant->model?->name) }}</strong>: {{ $variant->stock_qty === null ? 'Not set' : (float) $variant->stock_qty }}</div>
+                            @endforeach
                         @elseif((float) $product->stock_qty <= 0)
                             <span class="badge badge-red">Out</span>
                         @elseif($product->isLowStock())

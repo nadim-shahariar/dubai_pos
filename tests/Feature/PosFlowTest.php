@@ -42,6 +42,7 @@ class PosFlowTest extends TestCase
         $response = $this->actingAs($cashier)->postJson('/api/pos/sales', [
             'items' => [[
                 'product_id' => $product->id,
+                'variant_sku' => $product->fitments()->value('mapped_part_number'),
                 'qty' => 2,
                 'unit_price' => 125,
                 'discount_type' => 'none',
@@ -73,6 +74,7 @@ class PosFlowTest extends TestCase
         $this->actingAs($cashier)->postJson('/api/pos/sales', [
             'items' => [[
                 'product_id' => $product->id,
+                'variant_sku' => $product->fitments()->value('mapped_part_number'),
                 'qty' => 1,
                 'unit_price' => 125,
                 'variant_label' => 'Toyota Camry 2018–2024',
@@ -112,6 +114,7 @@ class PosFlowTest extends TestCase
         $payload = [
             'items' => [[
                 'product_id' => $product->id,
+                'variant_sku' => $product->fitments()->value('mapped_part_number'),
                 'qty' => 1,
                 'unit_price' => 125,
                 'discount_type' => 'percent',
@@ -213,11 +216,12 @@ class PosFlowTest extends TestCase
         $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
         $fitment = ProductFitment::where('product_id', $product->id)->where('mapped_part_number', 'TOY-BP-001')->firstOrFail();
         $fitment->update(['stock_qty' => 2]);
-        $productBefore = (float) $product->stock_qty;
+        $productBefore = (float) $product->fitments()->sum('stock_qty');
 
         $this->actingAs($cashier)->postJson('/api/pos/sales', [
             'items' => [[
                 'product_id' => $product->id,
+                'variant_sku' => $product->fitments()->value('mapped_part_number'),
                 'qty' => 1,
                 'unit_price' => 125,
                 'variant_label' => 'Toyota Camry 2018–2024',
@@ -233,6 +237,7 @@ class PosFlowTest extends TestCase
         $this->actingAs($cashier)->postJson('/api/pos/sales', [
             'items' => [[
                 'product_id' => $product->id,
+                'variant_sku' => $product->fitments()->value('mapped_part_number'),
                 'qty' => 2,
                 'unit_price' => 125,
                 'variant_label' => 'Toyota Camry 2018–2024',
@@ -319,6 +324,7 @@ class PosFlowTest extends TestCase
             'customer_id' => $customer->id,
             'items' => [[
                 'product_id' => $product->id,
+                'variant_sku' => $product->fitments()->value('mapped_part_number'),
                 'qty' => 1,
                 'unit_price' => 125,
             ]],
@@ -339,6 +345,7 @@ class PosFlowTest extends TestCase
         $this->actingAs($cashier)->postJson('/api/pos/sales', [
             'items' => [[
                 'product_id' => $product->id,
+                'variant_sku' => $product->fitments()->value('mapped_part_number'),
                 'qty' => 1,
                 'unit_price' => 125,
             ]],
@@ -564,6 +571,7 @@ class PosFlowTest extends TestCase
                 'year_to' => 2024,
                 'mapped_part_number' => 'MAZ-BP-001',
                 'cost_price' => 55.25,
+                    'stock_qty' => 5,
             ]],
         ])->assertOk();
 
@@ -576,6 +584,7 @@ class PosFlowTest extends TestCase
         $this->actingAs($this->cashier())->postJson('/api/pos/sales', [
             'items' => [[
                 'product_id' => $product->id,
+                'variant_sku' => $product->fitments()->value('mapped_part_number'),
                 'qty' => 1,
                 'unit_price' => 125,
                 'variant_label' => 'Mazda Mazda3 2020–2024',

@@ -56,7 +56,7 @@
                 @if(!$product->exists)
                     <div class="field"><label>Opening stock</label><input name="stock_qty" type="number" step="1" min="0" value="{{ old('stock_qty', 0) }}"><div class="hint">Creates an opening stock movement.</div></div>
                 @else
-                    <div class="field"><label>Current stock</label><input value="{{ (float) $product->stock_qty }}" disabled><div class="hint">Use Inventory to receive or adjust stock.</div></div>
+                    <div class="field"><label>{{ $product->fitments->isEmpty() ? 'Current stock' : 'Stock tracking' }}</label><input value="{{ $product->fitments->isEmpty() ? (float) $product->stock_qty : 'Per variant (see below)' }}" disabled><div class="hint">Use Inventory to receive or adjust stock.</div></div>
                 @endif
                 <div class="field"><label>Reorder level</label><input name="reorder_level" type="number" step="1" min="0" value="{{ old('reorder_level', $product->reorder_level ?? 0) }}"></div>
                 <div class="field"><label>Options</label>
@@ -105,7 +105,7 @@
                                 <td>{{ $fitment->brand?->name }} {{ $fitment->model?->name }}<div class="sub">{{ $fitment->engine }}</div></td>
                                 <td>{{ $fitment->year_from }}–{{ $fitment->year_to }}</td>
                                 <td class="mono">{{ $fitment->mapped_part_number ?: '—' }}</td>
-                                <td>{{ $fitment->stock_qty === null ? 'Inherit' : number_format((float) $fitment->stock_qty, 3) }}</td>
+                                <td>{{ $fitment->stock_qty === null ? 'Not set · 0 available' : number_format((float) $fitment->stock_qty, 3) }}</td>
                                 <td class="text-right">
                                     <form method="POST" action="{{ route('products.fitments.destroy', [$product, $fitment]) }}" data-confirm="Remove this fitment?">
                                         @csrf @method('DELETE')

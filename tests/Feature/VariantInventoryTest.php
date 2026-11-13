@@ -36,7 +36,7 @@ class VariantInventoryTest extends TestCase
     {
         $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
         $variant = $product->fitments()->firstOrFail();
-        $before = (float) $product->stock_qty;
+        $before = (float) $product->fitments()->where('id', '!=', $variant->id)->sum('stock_qty');
         $owner = User::where('role', 'owner')->firstOrFail();
         $this->actingAs($owner)->patch(route('inventory.variant-stock', [$product, $variant]), ['stock_qty' => 3])->assertRedirect();
         $this->assertSame('3.000', $variant->fresh()->stock_qty);
@@ -57,7 +57,7 @@ class VariantInventoryTest extends TestCase
         [$first, $second] = $product->fitments()->get()->all();
         $first->update(['stock_qty' => 2, 'cost_price' => 50]);
         $second->update(['stock_qty' => 4]);
-        $before = (float) $product->stock_qty;
+        $before = (float) $product->fitments()->sum('stock_qty');
         $owner = User::where('role', 'owner')->firstOrFail();
         $this->actingAs($owner)->post(route('inventory.receive', $product), [
             'product_fitment_id' => $first->id, 'qty' => 3, 'unit_cost' => 100,
@@ -71,5 +71,45 @@ class VariantInventoryTest extends TestCase
         $this->postJson(route('inventory.receive', $product), ['product_fitment_id' => 999999, 'qty' => 1, 'unit_cost' => 100])->assertUnprocessable();
         $this->postJson(route('inventory.adjust', $product), ['new_qty' => 100])->assertUnprocessable();
         $this->get(route('inventory.show', $product))->assertOk()->assertSee('Receive into variant');
+    }
+    public function test_a_variant_never_borrows_stock_from_other_variants_or_product_cache(): void
+    {
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+        [$a, $b] = $product->fitments()->get()->all();
+        $a->update(['stock_qty' => 2]);
+        $b->update(['stock_qty' => 7]);
+        $product->update(['stock_qty' => 0]); // Stale aggregate must not prevent an available SKU sale.
+        $cashier = User::where('role', 'cashier')->firstOrFail();
+        $payload = fn ($sku, $qty) => [
+            'items' => [['product_id' => $product->id, 'variant_sku' => $sku, 'qty' => $qty, 'unit_price' => 125]],
+            'payments' => [['method' => 'cash', 'amount' => 125 * $qty]],
+        ];
+        $this->actingAs($cashier)->postJson('/api/pos/sales', $payload($a->mapped_part_number, 1))->assertCreated();
+        $this->assertSame('1.000', $a->fresh()->stock_qty);
+        $this->assertSame('7.000', $b->fresh()->stock_qty);
+        $product->update(['stock_qty' => 999]); // Neither parent nor sibling quantity can fund A.
+        $this->postJson('/api/pos/sales', $payload($a->mapped_part_number, 2))->assertUnprocessable();
+        $this->assertSame('1.000', $a->fresh()->stock_qty);
+        $this->assertSame('7.000', $b->fresh()->stock_qty);
+        $this->postJson('/api/pos/sales', $payload($b->mapped_part_number, 3))->assertCreated();
+        $this->assertSame('1.000', $a->fresh()->stock_qty);
+        $this->assertSame('4.000', $b->fresh()->stock_qty);
+        $this->assertDatabaseHas('stock_movements', ['product_fitment_id' => $b->id, 'qty_out' => 3, 'variant_balance_after' => 4]);
+    }
+
+    public function test_unset_variant_stock_cannot_inherit_any_combined_quantity(): void
+    {
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+        $variant = $product->fitments()->firstOrFail();
+        $variant->update(['stock_qty' => null]);
+        $product->update(['stock_qty' => 999]);
+        $cashier = User::where('role', 'cashier')->firstOrFail();
+        $this->actingAs($cashier)->postJson('/api/pos/sales', [
+            'items' => [['product_id' => $product->id, 'variant_sku' => $variant->mapped_part_number, 'qty' => 1, 'unit_price' => 125]],
+            'payments' => [['method' => 'cash', 'amount' => 125]],
+        ])->assertUnprocessable();
+        $this->assertNull($variant->fresh()->stock_qty);
+        $owner = User::where('role', 'owner')->firstOrFail();
+        $this->actingAs($owner)->get(route('inventory.show', $product))->assertOk()->assertSee('Not set')->assertDontSee('Inherit product');
     }
 }

@@ -95,7 +95,8 @@ class Product extends Model
             'tax_rate' => (float) $this->tax_rate,
             'selling_price' => (float) $this->selling_price,
             'secret_cost_code' => $this->secret_cost_code,
-            'stock_qty' => (float) $this->stock_qty,
+            'stock_qty' => $this->fitments->isEmpty() ? (float) $this->stock_qty : null,
+            'stock_mode' => $this->fitments->isEmpty() ? 'single' : 'variant',
             'reorder_level' => (float) $this->reorder_level,
             'fitment_hint' => $this->fitmentHint(),
             'fitments' => $this->fitments->map(fn (ProductFitment $f) => [

@@ -277,7 +277,7 @@
         suggest.innerHTML = state.activeResults.length
             ? state.activeResults.map((product, index) => `
                 <div class="suggest-item" data-product-index="${index}">
-                    <div class="right">${money(product.selling_price)}<div class="meta">stock ${Number(product.stock_qty)}</div></div>
+                    <div class="right">${money(product.selling_price)}<div class="meta">${product.fitments?.length ? product.fitments.length + ' variants · select for stock' : 'Stock ' + Number(product.stock_qty)}</div></div>
                     <div class="name">${esc(product.name)}</div>
                     <div class="meta"><span class="mono">${esc(product.primary_part_number)}</span> · code ${esc(product.secret_cost_code)}${product.fitment_hint ? ' · ' + esc(product.fitment_hint) : ''}</div>
                 </div>`).join('') + `
@@ -376,8 +376,8 @@
         skuInput.readOnly = true;
         if (fitment.stock_qty !== null && fitment.stock_qty !== undefined) {
             tr.querySelector('.entry-stock').value = Number(fitment.stock_qty);
-        } else if (tr._baseStock !== undefined) {
-            tr.querySelector('.entry-stock').value = tr._baseStock;
+        } else {
+            tr.querySelector('.entry-stock').value = 0;
         }
         setVariantInput(tr, `<button type="button" class="variant-picker selected" data-open-variants>
             ${esc(tr._variant.label)}<span class="change">${esc(tr._variant.sku)} · change / add</span>
@@ -431,10 +431,9 @@
         tr._newVariants = [];
         tr._variant = null;
         if (tr._fitments.length) {
-            const separate = tr._fitments.some(f => f.stock_qty !== null && f.stock_qty !== undefined);
-            if (separate) stock.value = '';
+            stock.value = '';
             setVariantInput(tr, `<button type="button" class="variant-picker" data-open-variants>
-                Choose variant<span class="change">${separate ? 'Select to see its stock' : 'Shared product stock'}</span>
+                Choose variant<span class="change">Select to see its own stock</span>
             </button>`);
         } else {
             tr.querySelector('.duplicate-variant').style.display = 'none';
@@ -556,7 +555,7 @@
                 const sku = tr.querySelector('.entry-sku');
                 sku.value = tr._baseSku || '';
                 sku.readOnly = false;
-                if (tr._baseStock !== undefined) tr.querySelector('.entry-stock').value = tr._baseStock;
+                tr.querySelector('.entry-stock').value = '';
             } else {
                 applyVariant(tr, tr._newVariants[Number(index)]);
             }
@@ -634,7 +633,7 @@
             <input data-new-year-from type="number" min="1950" max="2100" value="2018" placeholder="From">
             <input data-new-year-to type="number" min="1950" max="2100" value="2024" placeholder="To">
             <input data-new-mapped placeholder="Part number *">
-            <input data-new-stock type="number" min="0" step="0.001" placeholder="Stock (inherit if blank)">
+            <input data-new-stock type="number" min="0" step="0.001" placeholder="Variant stock (blank = not set)">
             ${canViewCost ? '<input data-new-cost type="password" inputmode="decimal" autocomplete="off" placeholder="Buying price">' : ''}
             <button type="button" class="remove" data-remove-new-variant>×</button>
         `;
@@ -742,7 +741,7 @@
                 const sku = fitment.mapped_part_number || tr._baseSku || tr.querySelector('.entry-sku').value;
                 return `<label class="variant-option">
                     <input type="checkbox" value="${index}" ${selectedLabel === label ? 'checked' : ''}>
-                    <span><span class="v-name">${esc(label)}</span><span class="v-meta">Part no. ${esc(sku)} · Stock: ${fitment.stock_qty === null || fitment.stock_qty === undefined ? 'Shared product stock' : Number(fitment.stock_qty)}</span></span>
+                    <span><span class="v-name">${esc(label)}</span><span class="v-meta">Part no. ${esc(sku)} · Stock: ${fitment.stock_qty === null || fitment.stock_qty === undefined ? 'Stock not set (0 available)' : Number(fitment.stock_qty)}</span></span>
                 </label>`;
             }).join('')
             : '<div class="empty" style="padding:12px 0">No saved variants yet. Create the first one below.</div>';

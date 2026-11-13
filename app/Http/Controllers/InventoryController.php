@@ -16,7 +16,7 @@ class InventoryController extends Controller
         $q = trim((string) $request->query('q'));
         $filter = $request->query('filter');
         $products = Product::query()
-            ->with('category')
+            ->with(['category', 'fitments.brand', 'fitments.model'])
             ->when($q, fn ($query) => $query->where(function ($sub) use ($q) {
                 $sub->where('primary_part_number', 'like', "%{$q}%")
                     ->orWhere('name', 'like', "%{$q}%")
@@ -37,7 +37,7 @@ class InventoryController extends Controller
     public function show(Product $product)
     {
         $product->load(['category', 'fitments.brand', 'fitments.model']);
-        $movements = $product->stockMovements()->with('user')->latest('created_at')->paginate(20);
+        $movements = $product->stockMovements()->with(['user', 'fitment'])->latest('created_at')->paginate(20);
 
         return view('inventory.show', compact('product', 'movements'));
     }
@@ -51,7 +51,7 @@ class InventoryController extends Controller
 
         \DB::transaction(function () use ($product, $data, $request, $stock, $audit) {
             $locked = Product::lockForUpdate()->findOrFail($product->id);
-            if ($locked->fitments()->whereNotNull('stock_qty')->exists()) {
+            if ($locked->fitments()->exists()) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['new_qty' => 'Adjust the counted stock of the individual variant instead.']);
             }
             $before = (float) $locked->stock_qty;
@@ -83,7 +83,7 @@ class InventoryController extends Controller
                 }
                 $fitment->stock_qty = $fitment->stock_qty ?? 0;
             }
-            if (! $fitment && $locked->fitments()->whereNotNull('stock_qty')->exists()) {
+            if (! $fitment && $locked->fitments()->exists()) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['product_fitment_id' => 'Select the variant receiving stock.']);
             }
             $stock->receive($locked, $request->user(), (float) $data['qty'], (float) $data['unit_cost'], $data['reference'] ?? null, $fitment);
@@ -146,7 +146,7 @@ class InventoryController extends Controller
 
     public function movements(Request $request)
     {
-        $movements = StockMovement::with(['product', 'user'])
+        $movements = StockMovement::with(['product', 'user', 'fitment'])
             ->when($request->query('type'), fn ($q, $type) => $q->where('type', $type))
             ->latest('created_at')
             ->paginate(30);

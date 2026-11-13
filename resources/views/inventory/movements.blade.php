@@ -22,9 +22,9 @@
                     <td><span class="badge badge-gray">{{ str_replace('_', ' ', $movement->type) }}</span></td>
                     <td>{{ (float) $movement->qty_in ?: '—' }}</td>
                     <td>{{ (float) $movement->qty_out ?: '—' }}</td>
-                    <td class="main-cell">{{ (float) $movement->balance_after }}</td>
+                    <td class="main-cell">{{ $movement->product_fitment_id ? ($movement->variant_balance_after === null ? '—' : (float) $movement->variant_balance_after) : (float) $movement->balance_after }}</td>
                     @if(auth()->user()->canViewCost())<td>AED {{ number_format((float) $movement->unit_cost, 2) }}</td>@endif
-                    <td class="small">{{ $movement->note ?: $movement->reference_type }}</td>
+                    <td class="small">@if($movement->fitment)<strong>{{ $movement->fitment->mapped_part_number }}</strong><br>@endif{{ $movement->note ?: $movement->reference_type }}</td>
                     <td class="small">{{ $movement->user?->name }}</td>
                 </tr>
             @empty

@@ -23,7 +23,7 @@ class CarPlateTest extends TestCase
     private function payload(): array
     {
         return [
-            'items' => [['product_id' => Product::where('primary_part_number', 'BP-101')->firstOrFail()->id, 'qty' => 1, 'unit_price' => 125]],
+            'items' => [['product_id' => Product::where('primary_part_number', 'BP-101')->firstOrFail()->id, 'variant_sku' => 'TOY-BP-001', 'qty' => 1, 'unit_price' => 125]],
             'payments' => [['method' => 'cash', 'amount' => 125]],
         ];
     }

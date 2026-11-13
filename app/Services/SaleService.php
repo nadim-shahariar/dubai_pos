@@ -84,7 +84,7 @@ class SaleService
 
                 $variantCost = null;
                 $variantFitment = null;
-                $hasVariantStock = $product->fitments()->whereNotNull('stock_qty')->exists();
+                $hasVariantStock = $product->fitments()->exists();
                 if ($product->track_stock && $hasVariantStock && empty($item['variant_sku'])) {
                     throw ValidationException::withMessages(['items' => 'Select a stock variant for '.$product->primary_part_number.'.']);
                 }
@@ -118,7 +118,7 @@ class SaleService
 
             foreach ($requested as $productId => $qty) {
                 $product = $products->get($productId);
-                if ((float) $product->stock_qty + 0.0001 < $qty) {
+                if (! $product->fitments()->exists() && (float) $product->stock_qty + 0.0001 < $qty) {
                     throw ValidationException::withMessages([
                         'stock' => "Not enough stock for {$product->primary_part_number}. Available: ".number_format((float) $product->stock_qty, 3).', requested: '.number_format($qty, 3).'.',
                     ]);

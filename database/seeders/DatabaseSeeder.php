@@ -225,6 +225,7 @@ class DatabaseSeeder extends Seeder
             $productModels[$product->primary_part_number] = $product;
 
             $product->fitments()->delete();
+            $firstVariant = true;
             foreach ($data['fitments'] as [$brandName, $modelName, $from, $to, $mapped]) {
                 $product->fitments()->create([
                     'car_brand_id' => $brands[$brandName]->id,
@@ -232,7 +233,9 @@ class DatabaseSeeder extends Seeder
                     'year_from' => $from,
                     'year_to' => $to,
                     'mapped_part_number' => $mapped,
+                    'stock_qty' => $firstVariant ? $data['stock_qty'] : 0,
                 ]);
+                $firstVariant = false;
             }
 
             $product->aliases()->delete();
@@ -281,6 +284,7 @@ class DatabaseSeeder extends Seeder
                     $lines[] = [
                         'product_id' => $product->id,
                         'primary_part_number' => $product->primary_part_number,
+                        'variant_sku' => $product->fitments()->value('mapped_part_number'),
                         'name' => $product->name,
                         'qty' => $qty,
                         'unit_price' => $product->selling_price,
