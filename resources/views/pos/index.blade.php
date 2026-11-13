@@ -33,9 +33,9 @@
             <table class="entry-table">
                 <thead>
                     <tr>
-                        <th style="width:23%">Product name / key</th>
-                        <th style="width:13%">Variant</th>
-                        <th style="width:11%">SKU</th>
+                        <th style="width:21%">Product name / key</th>
+                        <th style="width:16%">Variant</th>
+                        <th style="width:10%">SKU</th>
                         <th style="width:9%">Buying code</th>
                         <th style="width:7%">Stock</th>
                         <th style="width:6%">Qty</th>
@@ -89,6 +89,27 @@
             </div>
             <div class="modal-foot"><button type="submit" class="btn">Open shift</button></div>
         </form>
+    </div>
+</div>
+
+{{-- Variant picker --}}
+<div class="modal-backdrop" id="variant-picker-modal">
+    <div class="modal small">
+        <div class="modal-head">
+            <div><h2>Select variants</h2><p id="variant-picker-product">Choose one or more variants for this product.</p></div>
+            <button class="modal-close" data-close="variant-picker-modal" type="button">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="flex items-center justify-between gap-1 mb-1">
+                <span class="small muted">Each selected variant is added as its own sale row.</span>
+                <button type="button" class="mini-link" id="variant-select-all">Select all</button>
+            </div>
+            <div id="variant-options" class="variant-options"></div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-secondary" type="button" data-close="variant-picker-modal">Cancel</button>
+            <button class="btn" type="button" id="variant-apply">Add selected variants</button>
+        </div>
     </div>
 </div>
 
