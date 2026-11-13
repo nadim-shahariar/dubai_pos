@@ -100,6 +100,7 @@ class Product extends Model
             'reorder_level' => (float) $this->reorder_level,
             'fitment_hint' => $this->fitmentHint(),
             'fitments' => $this->fitments->map(fn (ProductFitment $f) => [
+                'id' => $f->id,
                 'brand' => $f->brand?->name,
                 'model' => $f->model?->name,
                 'year_from' => $f->year_from,

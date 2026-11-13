@@ -61,10 +61,10 @@ class VoidSaleService
                 }
 
                 $fitment = null;
-                if ($item->variant_sku) {
+                if ($item->variant_sku || $item->product_fitment_id) {
                     $fitment = ProductFitment::query()
                         ->where('product_id', $product->id)
-                        ->where('mapped_part_number', $item->variant_sku)
+                        ->when($item->product_fitment_id, fn ($q) => $q->whereKey($item->product_fitment_id), fn ($q) => $q->where('mapped_part_number', $item->variant_sku))
                         ->lockForUpdate()
                         ->first();
                 }

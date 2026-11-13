@@ -24,10 +24,12 @@ test('selecting a product with variants never displays the combined stock', () =
     const { context, row } = setup();
     context.fillProduct(row, { id: 1, stock_qty: 999, selling_price: 125, fitments: [{ mapped_part_number: 'A', stock_qty: 5 }, { mapped_part_number: 'B', stock_qty: 8 }] });
     assert.equal(row.querySelector('.entry-stock').value, '');
-    context.applyVariant(row, { mapped_part_number: 'A', model: 'A', stock_qty: 5 });
+    context.applyVariant(row, { id: 101, mapped_part_number: 'SAME', model: 'A', stock_qty: 5 });
     assert.equal(row.querySelector('.entry-stock').value, 5);
-    context.applyVariant(row, { mapped_part_number: 'B', model: 'B', stock_qty: 8 });
+    assert.equal(row._variant.id, 101);
+    context.applyVariant(row, { id: 102, mapped_part_number: 'SAME', model: 'B', stock_qty: 8 });
     assert.equal(row.querySelector('.entry-stock').value, 8);
+    assert.equal(row._variant.id, 102);
     context.applyVariant(row, { mapped_part_number: 'C', model: 'C', stock_qty: null });
     assert.equal(row.querySelector('.entry-stock').value, 0);
 });

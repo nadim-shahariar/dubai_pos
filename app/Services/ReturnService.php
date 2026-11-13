@@ -80,6 +80,7 @@ class ReturnService
                     'condition' => (string) ($item['condition'] ?? 'resellable'),
                     'cost_price' => (float) $saleItem->cost_price,
                     'variant_sku' => $saleItem->variant_sku,
+                    'product_fitment_id' => $saleItem->product_fitment_id,
                 ];
             }
 
@@ -115,9 +116,9 @@ class ReturnService
                     $product = Product::find($line['product_id']);
                     if ($product && $product->track_stock) {
                         $fitment = null;
-                        if (! empty($line['variant_sku'])) {
+                        if (! empty($line['variant_sku']) || ! empty($line['product_fitment_id'])) {
                             $fitment = $product->fitments()
-                                ->where('mapped_part_number', $line['variant_sku'])
+                                ->when(! empty($line['product_fitment_id']), fn ($q) => $q->whereKey($line['product_fitment_id']), fn ($q) => $q->where('mapped_part_number', $line['variant_sku']))
                                 ->lockForUpdate()
                                 ->first();
                         }

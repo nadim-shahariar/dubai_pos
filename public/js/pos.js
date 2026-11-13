@@ -368,6 +368,7 @@
     const applyVariant = (tr, fitment) => {
         if (!fitment) return;
         tr._variant = {
+            id: fitment.id || null,
             label: variantLabel(fitment),
             sku: fitment.mapped_part_number || tr._baseSku || tr.querySelector('.entry-sku').value,
         };
@@ -944,6 +945,7 @@
             variants: tr._newVariants || [],
             variant_label: variant.label,
             variant_sku: variant.sku,
+            product_fitment_id: variant.id || null,
         };
     }).filter(row => row.product_id || (row.is_new && row.name));
 
@@ -967,6 +969,11 @@
                     variants: row.variants,
                 }),
             });
+            if (row.variant_sku) {
+                const matches = (data.product.fitments || []).filter(f => f.mapped_part_number === row.variant_sku && variantLabel(f) === row.variant_label);
+                if (matches.length === 1 && row.tr._variant) row.tr._variant.id = matches[0].id;
+            }
+            row.tr._fitments = data.product.fitments || [];
             row.tr.dataset.productId = data.product.id;
             row.tr.dataset.isNew = 'false';
             row.tr.dataset.originalPrice = data.product.selling_price;
@@ -991,6 +998,7 @@
                 override_reason: row.original_price && Math.abs(row.price - row.original_price) >= 0.01 ? 'Counter price adjustment' : null,
                 variant_label: row.variant_label || null,
                 variant_sku: row.variant_sku || null,
+                product_fitment_id: row.product_fitment_id || null,
             }));
             const sale = await api('/api/pos/sales', {
                 method: 'POST',

@@ -85,13 +85,17 @@ class SaleService
                 $variantCost = null;
                 $variantFitment = null;
                 $hasVariantStock = $product->fitments()->exists();
-                if ($product->track_stock && $hasVariantStock && empty($item['variant_sku'])) {
+                if ($product->track_stock && $hasVariantStock && empty($item['variant_sku']) && empty($item['product_fitment_id'])) {
                     throw ValidationException::withMessages(['items' => 'Select a stock variant for '.$product->primary_part_number.'.']);
                 }
-                if (! empty($item['variant_sku'])) {
-                    $variantFitment = $product->fitments()
-                        ->where('mapped_part_number', $item['variant_sku'])
-                        ->first();
+                if (! empty($item['variant_sku']) || ! empty($item['product_fitment_id'])) {
+                    $matches = $product->fitments()
+                        ->when(! empty($item['product_fitment_id']), fn ($q) => $q->whereKey($item['product_fitment_id']), fn ($q) => $q->where('mapped_part_number', $item['variant_sku']))
+                        ->lockForUpdate()->get();
+                    if ($matches->count() !== 1) {
+                        throw ValidationException::withMessages(['items' => 'Choose the exact vehicle variant; a part number alone is ambiguous.']);
+                    }
+                    $variantFitment = $matches->first();
                     if (! $variantFitment || ($product->track_stock && $hasVariantStock && $variantFitment->stock_qty === null)) {
                         throw ValidationException::withMessages(['items' => 'Select a valid variant with allocated stock for '.$product->primary_part_number.'.']);
                     }
@@ -103,7 +107,8 @@ class SaleService
                     'primary_part_number' => $product->primary_part_number,
                     'name' => $product->name,
                     'variant_label' => $item['variant_label'] ?? null,
-                    'variant_sku' => $item['variant_sku'] ?? null,
+                    'variant_sku' => $variantFitment?->mapped_part_number,
+                    'product_fitment_id' => $variantFitment?->id,
                     'qty' => $qty,
                     'unit_price' => $unitPrice,
                     'original_unit_price' => $originalPrice,
@@ -246,6 +251,7 @@ class SaleService
                     'name' => $line['name'],
                     'variant_label' => $line['variant_label'] ?? null,
                     'variant_sku' => $line['variant_sku'] ?? null,
+                    'product_fitment_id' => $line['product_fitment_id'] ?? null,
                     'qty' => $line['qty'],
                     'unit_price' => $line['unit_price'],
                     'original_unit_price' => $line['original_unit_price'],
@@ -278,10 +284,10 @@ class SaleService
                     continue;
                 }
                 $fitment = null;
-                if (! empty($line['variant_sku'])) {
+                if (! empty($line['product_fitment_id'])) {
                     $fitment = ProductFitment::query()
                         ->where('product_id', $product->id)
-                        ->where('mapped_part_number', $line['variant_sku'])
+                        ->whereKey($line['product_fitment_id'])
                         ->lockForUpdate()
                         ->first();
                 }

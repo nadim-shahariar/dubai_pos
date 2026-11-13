@@ -112,4 +112,34 @@ class VariantInventoryTest extends TestCase
         $owner = User::where('role', 'owner')->firstOrFail();
         $this->actingAs($owner)->get(route('inventory.show', $product))->assertOk()->assertSee('Not set')->assertDontSee('Inherit product');
     }
+    public function test_variants_with_the_same_part_number_keep_separate_identity_through_sale_return_and_void(): void
+    {
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+        [$a, $b] = $product->fitments()->get()->all();
+        $a->update(['mapped_part_number' => 'SHARED-PART', 'stock_qty' => 5]);
+        $b->update(['mapped_part_number' => 'SHARED-PART', 'stock_qty' => 8]);
+        $cashier = User::where('role', 'cashier')->firstOrFail();
+        $manager = User::where('role', 'manager')->firstOrFail();
+        $payload = [
+            'items' => [['product_id' => $product->id, 'product_fitment_id' => $b->id, 'variant_sku' => 'SHARED-PART', 'qty' => 1, 'unit_price' => 125]],
+            'payments' => [['method' => 'cash', 'amount' => 125]],
+        ];
+        $sale = app(SaleService::class)->complete($cashier, $payload);
+        $this->assertEquals($b->id, $sale->items->first()->product_fitment_id);
+        $this->assertSame('5.000', $a->fresh()->stock_qty);
+        $this->assertSame('7.000', $b->fresh()->stock_qty);
+        app(\App\Services\ReturnService::class)->create($manager, $sale, [['sale_item_id' => $sale->items->first()->id, 'qty' => 1, 'restock' => true]], 'Wrong item', 'cash');
+        $this->assertSame('5.000', $a->fresh()->stock_qty);
+        $this->assertSame('8.000', $b->fresh()->stock_qty);
+        $sale = app(SaleService::class)->complete($cashier, $payload);
+        app(\App\Services\VoidSaleService::class)->void($manager, $sale, null, 'Test void');
+        $this->assertSame('5.000', $a->fresh()->stock_qty);
+        $this->assertSame('8.000', $b->fresh()->stock_qty);
+        $this->actingAs($cashier)->postJson('/api/pos/sales', [
+            'items' => [['product_id' => $product->id, 'variant_sku' => 'SHARED-PART', 'qty' => 1, 'unit_price' => 125]],
+            'payments' => [['method' => 'cash', 'amount' => 125]],
+        ])->assertUnprocessable();
+        $data = $product->fresh()->toPosArray($cashier);
+        $this->assertEquals([$a->id, $b->id], collect($data['fitments'])->pluck('id')->all());
+    }
 }

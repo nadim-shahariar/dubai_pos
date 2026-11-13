@@ -285,6 +285,7 @@ class DatabaseSeeder extends Seeder
                         'product_id' => $product->id,
                         'primary_part_number' => $product->primary_part_number,
                         'variant_sku' => $product->fitments()->value('mapped_part_number'),
+                        'product_fitment_id' => $product->fitments()->value('id'),
                         'name' => $product->name,
                         'qty' => $qty,
                         'unit_price' => $product->selling_price,

@@ -8,7 +8,7 @@ class SaleItem extends Model
 {
     public $timestamps = false;
     protected $fillable = [
-        'sale_id', 'product_id', 'primary_part_number', 'name', 'variant_label', 'variant_sku', 'qty', 'unit_price',
+        'sale_id', 'product_id', 'product_fitment_id', 'primary_part_number', 'name', 'variant_label', 'variant_sku', 'qty', 'unit_price',
         'original_unit_price', 'discount_type', 'discount_value', 'discount_amount',
         'tax_rate', 'net_amount', 'vat_amount', 'line_total', 'cost_price',
         'price_override', 'override_reason', 'created_at',
