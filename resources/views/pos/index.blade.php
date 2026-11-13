@@ -20,12 +20,14 @@
                         </option>
                     @endforeach
                 </select>
+                <button class="btn btn-secondary btn-sm" id="new-customer-btn" type="button">+ New customer</button>
                 <div class="entry-customer-meta" id="customer-meta">Cash sale · no TRN</div>
             </div>
             <div class="entry-meta">
                 <span class="badge {{ $boot['shift'] ? 'badge-green' : 'badge-red' }}" id="entry-shift-badge">{{ $boot['shift'] ? 'Shift open' : 'Shift closed' }}</span>
-                <span>Invoice number is assigned on payment</span>
+                <span>Invoice on payment</span>
                 <span>{{ auth()->user()->name }} · {{ now()->format('d M Y') }}</span>
+                <button class="mini-link" id="shortcuts-btn" type="button">Shortcuts ?</button>
             </div>
         </div>
 
@@ -33,16 +35,16 @@
             <table class="entry-table">
                 <thead>
                     <tr>
-                        <th style="width:21%">Product name / key</th>
-                        <th style="width:16%">Variant</th>
+                        <th style="width:20%">Product name / key</th>
+                        <th style="width:15%">Variant</th>
                         <th style="width:10%">SKU</th>
-                        <th style="width:9%">Buying code</th>
+                        <th style="width:8%">Buying code</th>
                         <th style="width:7%">Stock</th>
                         <th style="width:6%">Qty</th>
                         <th style="width:9%">Selling price</th>
                         <th style="width:9%">Discount</th>
                         <th style="width:9%" class="text-right">Total</th>
-                        <th style="width:4%"></th>
+                        <th style="width:7%"></th>
                     </tr>
                 </thead>
                 <tbody id="entry-body"></tbody>
@@ -53,6 +55,7 @@
             <button type="button" class="btn btn-secondary" id="add-row-btn">+ Add product row</button>
             <button type="button" class="btn btn-ghost" id="clear-rows-btn">Clear all</button>
             <span class="entry-help">Type a product name, SKU, or key. Pick a suggestion, or choose <strong>Create new</strong> to add a new product inline.</span>
+            <span class="entry-shortcuts"><b>F2</b> add row · <b>F3</b> product · <b>F4</b> customer · <b>F9</b> pay · <b>?</b> help</span>
         </div>
     </section>
 
@@ -89,6 +92,58 @@
             </div>
             <div class="modal-foot"><button type="submit" class="btn">Open shift</button></div>
         </form>
+    </div>
+</div>
+
+{{-- New customer --}}
+<div class="modal-backdrop" id="customer-modal">
+    <div class="modal">
+        <div class="modal-head"><div><h2>New customer</h2><p>Create a customer without leaving the sale. Credit limits can be set later by a manager.</p></div><button class="modal-close" data-close="customer-modal" type="button">×</button></div>
+        <form id="customer-form">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="field"><label>Contact name *</label><input name="name" id="new-customer-name" required maxlength="150" placeholder="Omar Al Suwaidi"></div>
+                    <div class="field"><label>Phone</label><input name="phone" maxlength="30" placeholder="+971 50 000 0000"></div>
+                    <div class="field"><label>Company name</label><input name="company_name" maxlength="150" placeholder="Al Quoz Garage LLC"></div>
+                    <div class="field"><label>TRN (15 digits)</label><input name="trn" maxlength="15" inputmode="numeric" placeholder="Optional"></div>
+                    <div class="field span-2"><label>Email</label><input name="email" type="email" maxlength="150" placeholder="Optional"></div>
+                    <div class="field span-2"><label>Billing address</label><textarea name="address" maxlength="1000" placeholder="Optional"></textarea></div>
+                </div>
+                <div class="quick-summary">The new customer is selected for this sale immediately. Credit limit is 0 until a manager updates the customer record.</div>
+            </div>
+            <div class="modal-foot"><button class="btn btn-secondary" type="button" data-close="customer-modal">Cancel</button><button class="btn" type="submit">Create &amp; select</button></div>
+        </form>
+    </div>
+</div>
+
+{{-- Hidden buying price --}}
+<div class="modal-backdrop" id="buying-price-modal">
+    <div class="modal small">
+        <div class="modal-head"><div><h2>Buying price</h2><p id="buying-price-product">Hidden internal cost for this new product.</p></div><button class="modal-close" data-close="buying-price-modal" type="button">×</button></div>
+        <div class="modal-body">
+            <div class="field"><label>Buying price (AED)</label><input id="buying-price-input" type="password" inputmode="decimal" autocomplete="off" placeholder="••••"><div class="hint">Stored as the numeric cost. It is never shown in the sale table or on customer documents.</div></div>
+            <div class="quick-summary">Only owners and managers can enter a buying price. Cashiers can create the product and leave the cost pending for review.</div>
+        </div>
+        <div class="modal-foot"><button class="btn btn-secondary" type="button" data-close="buying-price-modal">Cancel</button><button class="btn" type="button" id="buying-price-save">Save hidden cost</button></div>
+    </div>
+</div>
+
+{{-- Shortcuts --}}
+<div class="modal-backdrop" id="shortcuts-modal">
+    <div class="modal small">
+        <div class="modal-head"><div><h2>Keyboard shortcuts</h2><p>Work the counter without reaching for the mouse.</p></div><button class="modal-close" data-close="shortcuts-modal" type="button">×</button></div>
+        <div class="modal-body">
+            <div class="shortcut-list">
+                <div><kbd>F2</kbd><span>Add a product row</span></div>
+                <div><kbd>F3</kbd><span>Focus product search</span></div>
+                <div><kbd>F4</kbd><span>Create a new customer</span></div>
+                <div><kbd>Enter</kbd><span>Pick the first product suggestion</span></div>
+                <div><kbd>F9</kbd><span>Take payment</span></div>
+                <div><kbd>Esc</kbd><span>Close the open modal</span></div>
+                <div><kbd>?</kbd><span>Show this help</span></div>
+            </div>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-close="shortcuts-modal">Got it</button></div>
     </div>
 </div>
 

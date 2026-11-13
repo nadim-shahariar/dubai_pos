@@ -317,6 +317,46 @@ class PosFlowTest extends TestCase
         $this->assertDatabaseHas('product_fitments', ['product_id' => $product->id, 'mapped_part_number' => 'MAZ-BP-102']);
     }
 
+    public function test_cashier_can_create_a_customer_from_the_pos(): void
+    {
+        $response = $this->actingAs($this->cashier())->postJson('/api/pos/customers', [
+            'name' => 'Counter Customer',
+            'company_name' => 'Counter Garage LLC',
+            'phone' => '+971500000001',
+            'trn' => '100999888777666',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('customer.name', 'Counter Garage LLC')
+            ->assertJsonPath('customer.credit_limit', 0);
+        $this->assertDatabaseHas('customers', [
+            'name' => 'Counter Customer',
+            'company_name' => 'Counter Garage LLC',
+            'credit_limit' => 0,
+        ]);
+    }
+
+    public function test_owner_can_save_a_hidden_buying_price_for_a_new_pos_product(): void
+    {
+        $owner = User::where('email', 'owner@gitgadgets.test')->firstOrFail();
+
+        $response = $this->actingAs($owner)->postJson('/api/pos/quick-add', [
+            'name' => 'Hidden Cost Part',
+            'primary_part_number' => 'HIDDEN-001',
+            'selling_price' => 150,
+            'secret_cost_code' => 'HIDDEN',
+            'stock_qty' => 1,
+            'cost_price' => 92.50,
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('products', [
+            'primary_part_number' => 'HIDDEN-001',
+            'cost_price' => 92.50,
+            'cost_pending' => 0,
+        ]);
+    }
+
     public function test_cashier_totals_endpoint_never_returns_cost(): void
     {
         $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();

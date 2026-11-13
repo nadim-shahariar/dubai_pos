@@ -11,7 +11,9 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 - **Fitment-first catalogue** — one product, many vehicle fitments and OEM/cross-reference numbers. Search by part number, vehicle, year, cross-reference, name, or barcode.
 - **Secret cost code** — a manually entered code shown to counter staff. The numeric cost is permission-gated and never sent to a cashier's API response or printed on customer documents.
 - **Inline product creation** — when a product is not in the catalogue, create it from the sale row with SKU, secret buying code, selling price and opening stock. Vehicle variants can be selected in the row; the **＋** action duplicates the product for another variant.
-- **Table POS** — customer selection or walk-in, product search, a click-to-select variant picker that can add several existing variants or create multiple new vehicle variants at once, inline new-product rows, quantity, line discounts, price override with a reason, split cash/card/credit/bank payments and cash change.
+- **Table POS** — customer selection, walk-in default, **new-customer creation from the POS**, product search, a click-to-select variant picker that can add several existing variants or create multiple new vehicle variants at once, inline new-product rows, quantity, line discounts, price override with a reason, split cash/card/credit/bank payments and cash change.
+- **Hidden buying price** — owners and managers can enter a masked buying price for a new product from the row lock action. It is stored as the numeric cost and never displayed in the table or on customer documents.
+- **Keyboard-first** — F2 add row, F3 product search, F4 new customer, F9 payment, and `?` for the shortcut reference.
 - **Approval controls** — discounts above the cashier limit and price overrides require a manager PIN (`1234` in the demo).
 - **UAE VAT invoices** — 5% VAT, VAT-inclusive or VAT-exclusive pricing, sequential `GG-2026-000001` invoice numbers, 80 mm receipt and A4 tax invoice.
 - **Stock ledger** — every sale, receipt, return, adjustment and opening quantity is written to an append-only movement history. Weighted-average cost on receipt.
@@ -94,7 +96,7 @@ php artisan test
 
 The suite covers VAT-inclusive/exclusive calculations, invoice discounts, split-payment sales, stock decrementing, cost visibility, manager approval, Quick Add, invoice privacy, credit notes/restocking, and role restrictions.
 
-Current result: **21 tests passing** (including VAT, split payments, table POS, discounts, multi-variant product creation, variant snapshots, returns and cost-privacy checks).
+Current result: **23 tests passing** (including VAT, split payments, table POS, discounts, multi-variant product creation, variant snapshots, returns and cost-privacy checks).
 
 ## Key project files
 

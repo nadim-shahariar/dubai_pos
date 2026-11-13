@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('api/pos')->name('api.pos.')->group(function () {
         Route::get('/search', [PosApiController::class, 'search'])->name('search');
         Route::get('/customers', [PosApiController::class, 'customerSearch'])->name('customers');
+        Route::post('/customers', [PosApiController::class, 'storeCustomer'])->name('customers.store');
         Route::post('/quick-add', [PosApiController::class, 'quickAdd'])->name('quick-add');
         Route::post('/products/{product}/variants', [PosApiController::class, 'addVariants'])->name('products.variants');
         Route::post('/totals', [PosApiController::class, 'totals'])->name('totals');

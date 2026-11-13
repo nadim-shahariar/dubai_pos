@@ -63,6 +63,44 @@ class PosApiController extends Controller
         return response()->json(['data' => $customers]);
     }
 
+
+    public function storeCustomer(Request $request, AuditService $audit)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:150'],
+            'company_name' => ['nullable', 'string', 'max:150'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:150'],
+            'trn' => ['nullable', 'digits:15', 'unique:customers,trn'],
+            'address' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $customer = Customer::create([
+            'name' => $data['name'],
+            'company_name' => $data['company_name'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'email' => $data['email'] ?? null,
+            'trn' => $data['trn'] ?? null,
+            'address' => $data['address'] ?? null,
+            'credit_limit' => 0,
+            'payment_terms_days' => 0,
+            'is_active' => true,
+        ]);
+
+        $audit->log('customer.created_from_pos', $customer, ['name' => $customer->name], $request->user());
+
+        return response()->json([
+            'customer' => [
+                'id' => $customer->id,
+                'name' => $customer->company_name ?: $customer->name,
+                'contact' => $customer->company_name ? $customer->name : null,
+                'trn' => $customer->trn,
+                'credit_limit' => 0,
+                'outstanding' => 0,
+            ],
+        ], 201);
+    }
+
     public function quickAdd(Request $request, StockService $stock, AuditService $audit, VehicleVariantService $variants)
     {
         abort_unless($request->user()->canSell(), 403);

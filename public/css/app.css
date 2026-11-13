@@ -451,7 +451,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .entry-customer label { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 800; }
 .entry-customer select { height: 36px; min-width: 240px; max-width: 360px; border: 1px solid #cfdae6; border-radius: 8px; padding: 0 10px; background: #fff; font-size: 12.5px; font-weight: 600; color: var(--ink); }
 .entry-customer-meta { font-size: 10.5px; color: var(--muted); }
-.entry-meta { display: flex; align-items: center; gap: 12px; font-size: 10.5px; color: var(--muted); text-align: right; }
+.entry-meta { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 12px; font-size: 10.5px; color: var(--muted); text-align: right; }
 .entry-table-wrap { flex: 1; min-height: 0; overflow: auto; }
 .entry-table { width: 100%; min-width: 1010px; border-collapse: collapse; font-size: 11.5px; }
 .entry-table th { position: sticky; top: 0; z-index: 3; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); background: #f7fafc; border-bottom: 1px solid var(--line); padding: 9px 6px; white-space: nowrap; }
@@ -516,3 +516,11 @@ table.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 @media (max-width: 700px) { .new-variant-row { grid-template-columns: 1fr 1fr; } }
 .new-variant-labels { display: grid; grid-template-columns: 1.1fr 1.1fr 70px 70px 1fr 28px; gap: 5px; margin-bottom: 4px; font-size: 8.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
 @media (max-width: 700px) { .new-variant-labels { display: none; } }
+
+.entry-shortcuts { margin-left: auto; font-size: 9.5px; color: var(--muted); white-space: nowrap; }
+.entry-shortcuts b { color: var(--navy); background: #eef3f7; border-radius: 3px; padding: 1px 4px; font-size: 9px; }
+.buying-price { color: #8a5d00; font-size: 13px; }
+.buying-price.cost-set { color: var(--green); }
+.shortcut-list { display: flex; flex-direction: column; gap: 7px; }
+.shortcut-list div { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+.shortcut-list kbd { display: inline-flex; min-width: 46px; justify-content: center; background: #eef3f7; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 3px 6px; font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--navy); }

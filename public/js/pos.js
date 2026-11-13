@@ -63,6 +63,66 @@
     customerSelect.addEventListener('change', syncCustomerMeta);
     syncCustomerMeta();
 
+
+    // ---------------------------------------------------------------- new customer
+    const openNewCustomer = () => {
+        $('#customer-form').reset();
+        openModal('customer-modal');
+        setTimeout(() => $('#new-customer-name').focus(), 100);
+    };
+    $('#new-customer-btn').addEventListener('click', openNewCustomer);
+    $('#customer-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = new FormData(e.target);
+        const payload = {};
+        form.forEach((value, key) => { if (value !== '') payload[key] = value; });
+        try {
+            const data = await api('/api/pos/customers', { method: 'POST', body: JSON.stringify(payload) });
+            const c = data.customer;
+            const option = new Option(c.name + (c.trn ? ' — ' + c.trn : ''), c.id);
+            option.dataset.name = c.name;
+            option.dataset.trn = c.trn || '';
+            option.dataset.credit = c.credit_limit;
+            option.dataset.outstanding = c.outstanding;
+            customerSelect.appendChild(option);
+            customerSelect.value = String(c.id);
+            syncCustomerMeta();
+            closeModal('customer-modal');
+            toast('Customer ' + c.name + ' created and selected.');
+        } catch (err) { toast(err.message, 'error'); }
+    });
+
+    // ---------------------------------------------------------------- hidden buying price
+    let costRow = null;
+    const openBuyingPrice = (tr) => {
+        if (!boot.user?.can_view_cost) return;
+        costRow = tr;
+        $('#buying-price-product').textContent = tr.querySelector('.entry-product').value + ' — the value is masked and never shown in the table.';
+        $('#buying-price-input').value = tr._cost ?? '';
+        openModal('buying-price-modal');
+        setTimeout(() => $('#buying-price-input').focus(), 100);
+    };
+    $('#buying-price-save').addEventListener('click', () => {
+        if (!costRow) return;
+        const raw = $('#buying-price-input').value.trim();
+        const value = raw === '' ? null : Number(raw);
+        if (value !== null && (!Number.isFinite(value) || value < 0)) {
+            toast('Buying price must be zero or more.', 'error');
+            return;
+        }
+        costRow._cost = value;
+        const btn = costRow.querySelector('.buying-price');
+        btn.classList.toggle('cost-set', value !== null);
+        btn.title = value === null ? 'Enter hidden buying price' : 'Buying price saved (hidden)';
+        closeModal('buying-price-modal');
+        toast(value === null ? 'Buying price cleared.' : 'Buying price saved hidden.');
+        costRow = null;
+    });
+
+    // ---------------------------------------------------------------- shortcuts
+    const openShortcuts = () => openModal('shortcuts-modal');
+    $('#shortcuts-btn').addEventListener('click', openShortcuts);
+
     // ---------------------------------------------------------------- product search
     const suggest = $('#product-suggest');
     const hideSuggest = () => { suggest.classList.remove('open'); state.activeRow = null; };
@@ -140,6 +200,7 @@
         </td>
         <td><div class="entry-total">AED 0.00</div></td>
         <td class="nowrap">
+            <button type="button" class="entry-remove buying-price" title="Enter hidden buying price" style="display:none">🔒</button>
             <button type="button" class="entry-remove duplicate-variant" title="Add another variant of this product" style="display:none">＋</button>
             <button type="button" class="entry-remove remove-row" title="Remove row">×</button>
         </td>`;
@@ -206,6 +267,7 @@
         tr.querySelector('.entry-qty').value = 1;
         tr.querySelector('.entry-discount').value = 0;
         tr.querySelector('.duplicate-variant').style.display = '';
+        tr.querySelector('.buying-price').style.display = 'none';
         tr._fitments = product.fitments || [];
         tr._variant = null;
         setVariantInput(tr, `<button type="button" class="variant-picker" data-open-variants>
@@ -239,8 +301,13 @@
         price.value = 0;
         tr._fitments = [];
         tr._variant = null;
+        tr._cost = null;
         setVariantInput(tr, '<input class="entry-input entry-variant" placeholder="Variant" autocomplete="off">');
         tr.querySelector('.duplicate-variant').style.display = 'none';
+        const costBtn = tr.querySelector('.buying-price');
+        costBtn.style.display = boot.user?.can_view_cost ? '' : 'none';
+        costBtn.classList.remove('cost-set');
+        costBtn.title = 'Enter hidden buying price';
         recalc();
         if (!silent) {
             sku.focus();
@@ -313,6 +380,16 @@
         recalc();
     });
 
+    $('#entry-body').addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' || !e.target.classList.contains('entry-product')) return;
+        const tr = e.target.closest('.entry-row');
+        if (tr && state.activeRow === tr && state.activeResults.length) {
+            e.preventDefault();
+            selectProduct(tr, state.activeResults[0]);
+            hideSuggest();
+        }
+    });
+
     $('#entry-body').addEventListener('click', (e) => {
         const tr = e.target.closest('.entry-row');
         if (!tr) return;
@@ -320,6 +397,9 @@
             tr.remove();
             if (!$$('#entry-body .entry-row').length) addRow();
             recalc();
+        }
+        if (e.target.closest('.buying-price')) {
+            openBuyingPrice(tr);
         }
         if (e.target.closest('.duplicate-variant') || e.target.closest('[data-open-variants]')) {
             openVariantPicker(tr);
@@ -551,6 +631,7 @@
             discount_type: tr.querySelector('.entry-discount-type').value,
             discount_value: Number(tr.querySelector('.entry-discount').value || 0),
             original_price: Number(tr.dataset.originalPrice || 0),
+            cost: tr._cost ?? null,
             variant_label: variant.label,
             variant_sku: variant.sku,
         };
@@ -569,6 +650,7 @@
                     selling_price: row.price,
                     secret_cost_code: row.code,
                     stock_qty: row.stock,
+                    cost_price: row.cost ?? undefined,
                     variants: [],
                 }),
             });
@@ -677,7 +759,12 @@
         if (e.key === 'Escape') { closeAll(); hideSuggest(); return; }
         if (e.key === 'F2') { e.preventDefault(); addRow(); }
         if (e.key === 'F3') { e.preventDefault(); $('#entry-body .entry-product')?.focus(); }
+        if (e.key === 'F4') { e.preventDefault(); openNewCustomer(); }
         if (e.key === 'F9') { e.preventDefault(); openPayment(); }
+        if (e.key === '?' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+            e.preventDefault();
+            openShortcuts();
+        }
     });
 
     addRow();
