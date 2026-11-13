@@ -430,9 +430,16 @@
         tr._fitments = product.fitments || [];
         tr._newVariants = [];
         tr._variant = null;
-        setVariantInput(tr, `<button type="button" class="variant-picker" data-open-variants>
-            Choose / create variant(s)<span class="change">Click to select or add</span>
-        </button>`);
+        if (tr._fitments.length) {
+            const separate = tr._fitments.some(f => f.stock_qty !== null && f.stock_qty !== undefined);
+            if (separate) stock.value = '';
+            setVariantInput(tr, `<button type="button" class="variant-picker" data-open-variants>
+                Choose variant<span class="change">${separate ? 'Select to see its stock' : 'Shared product stock'}</span>
+            </button>`);
+        } else {
+            tr.querySelector('.duplicate-variant').style.display = 'none';
+            setVariantInput(tr, '<span class="small muted">Single product</span><button type="button" class="mini-link" data-open-variants>+ Add variants</button>');
+        }
         if (product._selectedVariant) {
             applyVariant(tr, product._selectedVariant);
         }
@@ -735,7 +742,7 @@
                 const sku = fitment.mapped_part_number || tr._baseSku || tr.querySelector('.entry-sku').value;
                 return `<label class="variant-option">
                     <input type="checkbox" value="${index}" ${selectedLabel === label ? 'checked' : ''}>
-                    <span><span class="v-name">${esc(label)}</span><span class="v-meta">Part no. ${esc(sku)}</span></span>
+                    <span><span class="v-name">${esc(label)}</span><span class="v-meta">Part no. ${esc(sku)} · Stock: ${fitment.stock_qty === null || fitment.stock_qty === undefined ? 'Shared product stock' : Number(fitment.stock_qty)}</span></span>
                 </label>`;
             }).join('')
             : '<div class="empty" style="padding:12px 0">No saved variants yet. Create the first one below.</div>';

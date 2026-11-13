@@ -62,12 +62,20 @@ class StockService
         ]);
     }
 
-    public function receive(Product $product, User $user, float $qty, float $unitCost, ?string $reference = null): StockMovement
+    public function receive(Product $product, User $user, float $qty, float $unitCost, ?string $reference = null, ?ProductFitment $fitment = null): StockMovement
     {
         if ($qty <= 0) {
             throw ValidationException::withMessages(['qty' => 'Received quantity must be greater than zero.']);
         }
 
+        if ($fitment) {
+            if ($fitment->product_id !== $product->id) {
+                throw ValidationException::withMessages(['product_fitment_id' => 'Variant does not belong to this product.']);
+            }
+            $variantQty = (float) ($fitment->stock_qty ?? 0);
+            $fitment->cost_price = round(($variantQty * (float) ($fitment->cost_price ?? $product->cost_price) + $qty * $unitCost) / ($variantQty + $qty), 2);
+            $fitment->stock_qty = $variantQty;
+        }
         $oldQty = (float) $product->stock_qty;
         $oldCost = (float) $product->cost_price;
         $newCost = $oldQty > 0
@@ -77,7 +85,7 @@ class StockService
         $product->cost_price = round($newCost, 2);
         $product->cost_pending = false;
 
-        return $this->apply($product, $user, 'purchase_receipt', $qty, 0, $unitCost, 'stock_receipt', null, $reference);
+        return $this->apply($product, $user, 'purchase_receipt', $qty, 0, $unitCost, 'stock_receipt', null, $reference, $fitment);
     }
 
     public function adjust(Product $product, User $user, float $newQty, ?string $note = null): StockMovement

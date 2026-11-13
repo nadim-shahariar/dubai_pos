@@ -83,10 +83,18 @@ class SaleService
                 }
 
                 $variantCost = null;
+                $variantFitment = null;
+                $hasVariantStock = $product->fitments()->whereNotNull('stock_qty')->exists();
+                if ($product->track_stock && $hasVariantStock && empty($item['variant_sku'])) {
+                    throw ValidationException::withMessages(['items' => 'Select a stock variant for '.$product->primary_part_number.'.']);
+                }
                 if (! empty($item['variant_sku'])) {
                     $variantFitment = $product->fitments()
                         ->where('mapped_part_number', $item['variant_sku'])
                         ->first();
+                    if (! $variantFitment || ($product->track_stock && $hasVariantStock && $variantFitment->stock_qty === null)) {
+                        throw ValidationException::withMessages(['items' => 'Select a valid variant with allocated stock for '.$product->primary_part_number.'.']);
+                    }
                     $variantCost = $variantFitment?->cost_price;
                 }
 

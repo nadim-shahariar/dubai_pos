@@ -55,6 +55,9 @@
             <form method="POST" action="{{ route('inventory.receive', $product) }}">
                 @csrf
                 <div class="form-grid">
+                    @if($product->fitments->isNotEmpty())
+                    <div class="field span-2"><label for="receive-variant">Receive into variant</label><select id="receive-variant" name="product_fitment_id"><option value="">Single / shared product stock</option>@foreach($product->fitments as $variant)<option value="{{ $variant->id }}">{{ $variant->brand?->name }} {{ $variant->model?->name }} {{ $variant->year_from }}–{{ $variant->year_to }} · {{ $variant->mapped_part_number }}</option>@endforeach</select></div>
+                    @endif
                     <div class="field"><label>Quantity received *</label><input name="qty" type="number" step="1" min="0.001" required></div>
                     <div class="field"><label>Unit cost (AED) *</label><input name="unit_cost" type="number" step="0.01" min="0" value="{{ auth()->user()->canViewCost() ? (float) $product->cost_price : '' }}" required></div>
                     <div class="field span-2"><label>Reference</label><input name="reference" maxlength="255" placeholder="Supplier invoice / GRN reference"></div>

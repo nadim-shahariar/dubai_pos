@@ -51,6 +51,9 @@ class InventoryController extends Controller
 
         \DB::transaction(function () use ($product, $data, $request, $stock, $audit) {
             $locked = Product::lockForUpdate()->findOrFail($product->id);
+            if ($locked->fitments()->whereNotNull('stock_qty')->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['new_qty' => 'Adjust the counted stock of the individual variant instead.']);
+            }
             $before = (float) $locked->stock_qty;
             $stock->adjust($locked, $request->user(), (float) $data['new_qty'], $data['note'] ?? 'Stock adjustment');
             $audit->log('stock.adjusted', $locked, ['before' => $before, 'after' => (float) $data['new_qty'], 'note' => $data['note'] ?? null], $request->user());
@@ -65,13 +68,25 @@ class InventoryController extends Controller
             'qty' => ['required', 'numeric', 'gt:0'],
             'unit_cost' => ['required', 'numeric', 'min:0'],
             'reference' => ['nullable', 'string', 'max:255'],
+            'product_fitment_id' => ['nullable', 'integer'],
         ]);
 
         \DB::transaction(function () use ($product, $data, $request, $stock, $audit) {
             $locked = Product::lockForUpdate()->findOrFail($product->id);
             $before = (float) $locked->stock_qty;
             $beforeCost = (float) $locked->cost_price;
-            $stock->receive($locked, $request->user(), (float) $data['qty'], (float) $data['unit_cost'], $data['reference'] ?? null);
+            $fitment = null;
+            if (! empty($data['product_fitment_id'])) {
+                $fitment = $locked->fitments()->whereKey($data['product_fitment_id'])->lockForUpdate()->first();
+                if (! $fitment) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['product_fitment_id' => 'Choose a variant belonging to this product.']);
+                }
+                $fitment->stock_qty = $fitment->stock_qty ?? 0;
+            }
+            if (! $fitment && $locked->fitments()->whereNotNull('stock_qty')->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['product_fitment_id' => 'Select the variant receiving stock.']);
+            }
+            $stock->receive($locked, $request->user(), (float) $data['qty'], (float) $data['unit_cost'], $data['reference'] ?? null, $fitment);
             $audit->log('stock.received', $locked, [
                 'before_qty' => $before,
                 'received' => (float) $data['qty'],
@@ -96,6 +111,8 @@ class InventoryController extends Controller
             $lockedProduct = Product::lockForUpdate()->findOrFail($product->id);
             $lockedFitment = ProductFitment::lockForUpdate()->findOrFail($fitment->id);
             $before = (float) ($lockedFitment->stock_qty ?? 0);
+            // A null quantity means shared stock; initialize it before posting the variant movement.
+            $lockedFitment->stock_qty = $before;
             $target = round((float) $data['stock_qty'], 3);
             $delta = round($target - $before, 3);
 
