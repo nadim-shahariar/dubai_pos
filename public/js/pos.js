@@ -624,19 +624,27 @@
     let variantRow = null;
     let npvRow = null;
 
+    const rememberVariantCategory = (name) => {
+        const list = $('#variant-category-list');
+        if (!name || !list || Array.from(list.options).some(o => o.value.toLowerCase() === name.toLowerCase())) return;
+        const option = document.createElement('option');
+        option.value = name;
+        list.appendChild(option);
+    };
+
     const createVariantInputRow = (values = {}) => {
-        const canViewCost = !!boot.user?.can_view_cost;
         const row = document.createElement('div');
-        row.className = 'new-variant-row' + (canViewCost ? ' with-cost' : '');
+        row.className = 'new-variant-row with-cost';
         row.innerHTML = `
-            <input data-new-brand list="variant-brand-list" placeholder="Vehicle brand" autocomplete="off">
-            <input data-new-model list="variant-model-list" placeholder="Model" autocomplete="off">
-            <input data-new-year-from type="number" min="1950" max="2100" value="2018" placeholder="From">
-            <input data-new-year-to type="number" min="1950" max="2100" value="2024" placeholder="To">
-            <input data-new-mapped placeholder="Part number (optional)">
-            <input data-new-stock type="number" min="0" step="0.001" placeholder="Variant stock (blank = not set)">
-            ${canViewCost ? '<input data-new-cost type="password" inputmode="decimal" autocomplete="off" placeholder="Buying price">' : ''}
-            <button type="button" class="remove" data-remove-new-variant>×</button>
+            <label class="field"><span>Vehicle brand *</span><input data-new-brand list="variant-brand-list" placeholder="Vehicle brand" autocomplete="off" required></label>
+            <label class="field"><span>Model *</span><input data-new-model list="variant-model-list" placeholder="Model" autocomplete="off" required></label>
+            <label class="field"><span>Year from</span><input data-new-year-from type="number" min="1950" max="2100" value="2018"></label>
+            <label class="field"><span>Year to</span><input data-new-year-to type="number" min="1950" max="2100" value="2024"></label>
+            <label class="field"><span>Category — select or add</span><input data-new-category list="variant-category-list" maxlength="100" placeholder="Choose category or type a new one" autocomplete="off"></label>
+            <label class="field"><span>Part number (optional)</span><input data-new-mapped maxlength="50" placeholder="Leave blank if unavailable"></label>
+            <label class="field"><span>Stock *</span><input data-new-stock type="number" min="0" step="0.001" placeholder="Enter stock, including 0" required></label>
+            <label class="field"><span>Buying price (AED) *</span><input data-new-cost type="password" inputmode="decimal" autocomplete="off" placeholder="Enter buying price, including 0" required></label>
+            <button type="button" class="remove" data-remove-new-variant aria-label="Remove variant">Remove variant ×</button>
         `;
 
         row.querySelector('[data-new-brand]').value = values.vehicle_brand || values.brand || '';
@@ -644,6 +652,7 @@
         row.querySelector('[data-new-year-from]').value = values.year_from || 2018;
         row.querySelector('[data-new-year-to]').value = values.year_to || 2024;
         row.querySelector('[data-new-mapped]').value = values.mapped_part_number || '';
+        row.querySelector('[data-new-category]').value = values.category_name || '';
         row.querySelector('[data-new-stock]').value = values.stock_qty ?? '';
         const cost = row.querySelector('[data-new-cost]');
         if (cost) cost.value = values.cost_price ?? '';
@@ -676,6 +685,7 @@
 
     const collectVariantRows = (selector) => {
         return $$(selector + ' .new-variant-row').map(row => ({
+            category_name: row.querySelector('[data-new-category]').value.trim(),
             vehicle_brand: row.querySelector('[data-new-brand]').value.trim(),
             vehicle_model: row.querySelector('[data-new-model]').value.trim(),
             year_from: Number(row.querySelector('[data-new-year-from]').value || 0),
@@ -683,7 +693,14 @@
             mapped_part_number: row.querySelector('[data-new-mapped]').value.trim(),
             stock_qty: row.querySelector('[data-new-stock]')?.value === '' ? null : Number(row.querySelector('[data-new-stock]')?.value),
             cost_price: row.querySelector('[data-new-cost]')?.value.trim() || null,
-        })).filter(row => row.vehicle_brand || row.vehicle_model || row.mapped_part_number);
+        })).filter(row => row.vehicle_brand || row.vehicle_model || row.mapped_part_number || row.category_name || row.stock_qty !== null || row.cost_price !== null);
+    };
+
+    const validateVariantNumbers = (variants) => {
+        const invalid = variants.some(v => v.stock_qty === null || !Number.isFinite(Number(v.stock_qty)) || Number(v.stock_qty) < 0
+            || v.cost_price === null || !Number.isFinite(Number(v.cost_price)) || Number(v.cost_price) < 0);
+        if (invalid) toast('Buying price and stock are required for every variant. Enter 0 when applicable.', 'error');
+        return !invalid;
     };
 
     const openNewProductVariants = (tr) => {
@@ -705,6 +722,7 @@
         if (!npvRow) return;
         const variants = collectVariantRows('#npv-rows');
         if (!variants.length) { toast('Add at least one variant.', 'error'); return; }
+        if (!validateVariantNumbers(variants)) return;
         const invalid = variants.find(v => !v.vehicle_brand || !v.vehicle_model);
         if (invalid) { toast('Each variant needs a vehicle brand and model.', 'error'); return; }
 
@@ -740,7 +758,7 @@
                 const sku = fitment.mapped_part_number || tr._baseSku || tr.querySelector('.entry-sku').value;
                 return `<label class="variant-option">
                     <input type="checkbox" value="${index}" ${selectedLabel === label ? 'checked' : ''}>
-                    <span><span class="v-name">${esc(label)}</span><span class="v-meta">Part no. ${esc(sku)} · Stock: ${fitment.stock_qty === null || fitment.stock_qty === undefined ? 'Stock not set (0 available)' : Number(fitment.stock_qty)}</span></span>
+                    <span><span class="v-name">${esc(label)}</span><span class="v-meta">Part no. ${esc(sku)} · ${fitment.category_name ? 'Category: ' + esc(fitment.category_name) + ' · ' : ''}Stock: ${fitment.stock_qty === null || fitment.stock_qty === undefined ? 'Stock not set (0 available)' : Number(fitment.stock_qty)}</span></span>
                 </label>`;
             }).join('')
             : '<div class="empty" style="padding:12px 0">No saved variants yet. Create the first one below.</div>';
@@ -757,6 +775,7 @@
             .map(input => Number(input.value))
             .filter(index => Number.isInteger(index) && row._fitments[index]);
         const newVariants = collectNewVariants();
+        if (!validateVariantNumbers(newVariants)) return;
         const invalid = newVariants.find(v => !v.vehicle_brand || !v.vehicle_model);
         if (invalid) {
             toast('Each new variant needs a vehicle brand and model.', 'error');
@@ -777,6 +796,7 @@
                     body: JSON.stringify({ variants: newVariants }),
                 });
                 row._fitments = data.data;
+                data.data.forEach(f => rememberVariantCategory(f.category_name));
                 newVariants.forEach(variant => {
                     const found = data.data.find(fitment =>
                         String(fitment.brand).toLowerCase() === variant.vehicle_brand.toLowerCase()
@@ -967,6 +987,7 @@
                 if (matches.length === 1 && row.tr._variant) row.tr._variant.id = matches[0].id;
             }
             row.tr._fitments = data.product.fitments || [];
+            row.tr._fitments.forEach(f => rememberVariantCategory(f.category_name));
             row.tr.dataset.productId = data.product.id;
             row.tr.dataset.isNew = 'false';
             row.tr.dataset.originalPrice = data.product.selling_price;

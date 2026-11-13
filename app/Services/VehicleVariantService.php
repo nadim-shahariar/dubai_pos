@@ -64,7 +64,13 @@ class VehicleVariantService
                 ]);
             }
 
+            $categoryName = trim((string) ($row['category_name'] ?? ''));
+            if (mb_strlen($categoryName) > 100) {
+                throw ValidationException::withMessages(["variants.{$index}.category_name" => 'Category must not exceed 100 characters.']);
+            }
             $normalised[] = [
+                'category_name' => $categoryName,
+                'category_id' => $row['category_id'] ?? null,
                 'vehicle_brand' => $brand,
                 'vehicle_model' => $model,
                 'year_from' => $yearFrom,
@@ -100,7 +106,14 @@ class VehicleVariantService
                 continue;
             }
 
+            $categoryId = $row['category_id'] ?: $product->category_id;
+            if ($row['category_name'] !== '') {
+                $category = \App\Models\Category::whereRaw('LOWER(name) = ?', [mb_strtolower($row['category_name'])])->first()
+                    ?? \App\Models\Category::firstOrCreate(['name' => $row['category_name']]);
+                $categoryId = $category->id;
+            }
             $product->fitments()->create([
+                'category_id' => $categoryId,
                 'car_brand_id' => $brand->id,
                 'car_model_id' => $model->id,
                 'year_from' => $row['year_from'],

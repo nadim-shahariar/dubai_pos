@@ -198,6 +198,7 @@ class PosFlowTest extends TestCase
             'secret_cost_code' => 'CATQA',
             'stock_qty' => 3,
             'variants' => [[
+                'cost_price' => 0, 'stock_qty' => 0,
                 'vehicle_brand' => 'Mazda',
                 'vehicle_model' => 'Mazda2',
                 'year_from' => 2020,
@@ -492,8 +493,8 @@ class PosFlowTest extends TestCase
         $response = $this->actingAs(User::where('email', 'owner@gitgadgets.test')->firstOrFail())
             ->post(route('products.fitments.store', $product), [
                 'variants' => [
-                    ['vehicle_brand' => 'BYD', 'vehicle_model' => 'Seal', 'year_from' => 2023, 'year_to' => 2025, 'mapped_part_number' => 'BYD-BP-101'],
-                    ['vehicle_brand' => 'BYD', 'vehicle_model' => 'Atto 3', 'year_from' => 2023, 'year_to' => 2025, 'mapped_part_number' => 'BYD-BP-102'],
+                    ['cost_price' => 0, 'stock_qty' => 0, 'vehicle_brand' => 'BYD', 'vehicle_model' => 'Seal', 'year_from' => 2023, 'year_to' => 2025, 'mapped_part_number' => 'BYD-BP-101'],
+                    ['cost_price' => 0, 'stock_qty' => 0, 'vehicle_brand' => 'BYD', 'vehicle_model' => 'Atto 3', 'year_from' => 2023, 'year_to' => 2025, 'mapped_part_number' => 'BYD-BP-102'],
                 ],
             ]);
 
@@ -514,8 +515,8 @@ class PosFlowTest extends TestCase
             'secret_cost_code' => 'MULTI',
             'stock_qty' => 3,
             'variants' => [
-                ['vehicle_brand' => 'Toyota', 'vehicle_model' => 'Hilux', 'year_from' => 2018, 'year_to' => 2024, 'mapped_part_number' => 'TOY-HILUX-001'],
-                ['vehicle_brand' => 'Ford', 'vehicle_model' => 'F-150', 'year_from' => 2019, 'year_to' => 2024, 'mapped_part_number' => 'FOR-F150-001'],
+                ['cost_price' => 0, 'stock_qty' => 0, 'vehicle_brand' => 'Toyota', 'vehicle_model' => 'Hilux', 'year_from' => 2018, 'year_to' => 2024, 'mapped_part_number' => 'TOY-HILUX-001'],
+                ['cost_price' => 0, 'stock_qty' => 0, 'vehicle_brand' => 'Ford', 'vehicle_model' => 'F-150', 'year_from' => 2019, 'year_to' => 2024, 'mapped_part_number' => 'FOR-F150-001'],
             ],
         ]);
 
@@ -546,8 +547,8 @@ class PosFlowTest extends TestCase
                 'is_active' => 1,
                 'track_stock' => 1,
                 'variants' => [
-                    ['vehicle_brand' => 'Kia', 'vehicle_model' => 'Sportage', 'year_from' => 2020, 'year_to' => 2024, 'mapped_part_number' => 'KIA-SPORT-001'],
-                    ['vehicle_brand' => 'Hyundai', 'vehicle_model' => 'Tucson', 'year_from' => 2021, 'year_to' => 2024, 'mapped_part_number' => 'HYU-TUC-001'],
+                    ['cost_price' => 0, 'stock_qty' => 0, 'vehicle_brand' => 'Kia', 'vehicle_model' => 'Sportage', 'year_from' => 2020, 'year_to' => 2024, 'mapped_part_number' => 'KIA-SPORT-001'],
+                    ['cost_price' => 0, 'stock_qty' => 0, 'vehicle_brand' => 'Hyundai', 'vehicle_model' => 'Tucson', 'year_from' => 2021, 'year_to' => 2024, 'mapped_part_number' => 'HYU-TUC-001'],
                 ],
             ]);
 
@@ -565,6 +566,7 @@ class PosFlowTest extends TestCase
 
         $this->actingAs($owner)->postJson('/api/pos/products/'.$product->id.'/variants', [
             'variants' => [[
+                'cost_price' => 0, 'stock_qty' => 0,
                 'vehicle_brand' => 'Mazda',
                 'vehicle_model' => 'Mazda3',
                 'year_from' => 2020,
@@ -606,8 +608,8 @@ class PosFlowTest extends TestCase
         $response = $this->actingAs($this->cashier())
             ->postJson('/api/pos/products/'.$product->id.'/variants', [
                 'variants' => [
-                    ['vehicle_brand' => 'Mazda', 'vehicle_model' => 'Mazda6', 'year_from' => 2020, 'year_to' => 2024, 'mapped_part_number' => 'MAZ-BP-101'],
-                    ['vehicle_brand' => 'Mazda', 'vehicle_model' => 'CX-5', 'year_from' => 2021, 'year_to' => 2024, 'mapped_part_number' => 'MAZ-BP-102'],
+                    ['cost_price' => 0, 'stock_qty' => 0, 'vehicle_brand' => 'Mazda', 'vehicle_model' => 'Mazda6', 'year_from' => 2020, 'year_to' => 2024, 'mapped_part_number' => 'MAZ-BP-101'],
+                    ['cost_price' => 0, 'stock_qty' => 0, 'vehicle_brand' => 'Mazda', 'vehicle_model' => 'CX-5', 'year_from' => 2021, 'year_to' => 2024, 'mapped_part_number' => 'MAZ-BP-102'],
                 ],
             ]);
 

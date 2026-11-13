@@ -204,3 +204,7 @@ Validation: `php artisan test` and `node --test tests/JavaScript/variant-stock.t
 ### Optional part numbers
 
 Product and variant part numbers are optional in catalogue forms and POS creation. Multiple products may have a null part number. Existing part numbers retain uniqueness checks. Variants without part numbers are selected by their saved variant ID, so their stock stays independent. Run migrations after deployment to make the product part-number column nullable.
+
+### POS variant category, buying price and opening stock
+
+Both POS variant dialogs offer a Category field: select an existing suggestion or type a new category name, which is created when the variant is saved. Categories are stored per variant; blank uses the product category. Each new POS variant requires explicitly entered buying price and stock (zero is valid). Part numbers remain optional. Cashiers may enter a buying price for a new variant without receiving saved numeric cost values in API responses. Run migrations to add the variant category relation.

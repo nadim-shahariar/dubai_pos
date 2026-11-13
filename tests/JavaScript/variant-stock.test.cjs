@@ -5,10 +5,10 @@ const vm = require('node:vm');
 const source = readFileSync('public/js/pos.js', 'utf8');
 function setup() {
     const context = vm.createContext({
-        setVariantInput: (row, html) => { row.variantHTML = html; },
+        toast: () => {}, setVariantInput: (row, html) => { row.variantHTML = html; },
         variantLabel: f => f.model || 'Variant', esc: String, recalc: () => {},
     });
-    for (const name of ['applyVariant', 'fillProduct']) {
+    for (const name of ['applyVariant', 'fillProduct', 'validateVariantNumbers']) {
         const start = source.indexOf(`    const ${name} = `);
         const end = source.indexOf('\n    };', start) + '\n    };'.length;
         vm.runInContext(source.slice(start, end) + `\nglobalThis.${name} = ${name};`, context);
@@ -38,4 +38,13 @@ test('a product without variants shows its single product quantity', () => {
     context.fillProduct(row, { id: 2, stock_qty: 17, selling_price: 10, fitments: [] });
     assert.equal(row.querySelector('.entry-stock').value, 17);
     assert.match(row.variantHTML, /Single product/);
+});
+
+test('variant buying price and stock require an explicit nonnegative number, including zero', () => {
+    const { context } = setup();
+    assert.equal(context.validateVariantNumbers([{ cost_price: '0', stock_qty: 0 }]), true);
+    assert.equal(context.validateVariantNumbers([{ cost_price: null, stock_qty: 1 }]), false);
+    assert.equal(context.validateVariantNumbers([{ cost_price: '10', stock_qty: null }]), false);
+    assert.equal(context.validateVariantNumbers([{ cost_price: '-1', stock_qty: 1 }]), false);
+    assert.equal(context.validateVariantNumbers([{ cost_price: 'abc', stock_qty: 1 }]), false);
 });

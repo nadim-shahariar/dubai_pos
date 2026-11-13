@@ -3,6 +3,7 @@
 @section('main-class', 'pos-main-simple')
 
 @section('content')
+<datalist id="variant-category-list">@foreach($boot['categories'] as $category)<option value="{{ $category['name'] }}"></option>@endforeach</datalist>
 <div class="simple-pos">
     <section class="entry-card">
         <div class="entry-head">
@@ -319,3 +320,15 @@
     </div>
 </div>
 @endsection
+
+@push('head')
+<style>
+.pos-body .new-variant-labels { display: none; }
+.pos-body .new-variant-row.with-cost { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fbfdff; }
+.pos-body .new-variant-row .field { margin: 0; min-width: 0; }
+.pos-body .new-variant-row .field > span { display: block; margin-bottom: 5px; font-size: 11px; font-weight: 700; }
+.pos-body .new-variant-row .field input { width: 100%; min-width: 0; }
+.pos-body .new-variant-row > .remove { grid-column: 1 / -1; justify-self: end; }
+@media (max-width: 600px) { .pos-body .new-variant-row.with-cost { grid-template-columns: minmax(0, 1fr); } }
+</style>
+@endpush

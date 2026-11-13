@@ -42,8 +42,8 @@ class OptionalPartNumberTest extends TestCase
         $response = $this->actingAs($cashier)->postJson('/api/pos/quick-add', [
             'name' => 'Two numberless variants', 'secret_cost_code' => 'NOVARIANTNO', 'selling_price' => 50,
             'variants' => [
-                ['vehicle_brand' => 'TestBrand', 'vehicle_model' => 'ModelA', 'year_from' => 2020, 'year_to' => 2024, 'stock_qty' => 3],
-                ['vehicle_brand' => 'TestBrand', 'vehicle_model' => 'ModelB', 'year_from' => 2020, 'year_to' => 2024, 'stock_qty' => 7],
+                ['cost_price' => 0, 'stock_qty' => 0, 'vehicle_brand' => 'TestBrand', 'vehicle_model' => 'ModelA', 'year_from' => 2020, 'year_to' => 2024, 'stock_qty' => 3],
+                ['cost_price' => 0, 'stock_qty' => 0, 'vehicle_brand' => 'TestBrand', 'vehicle_model' => 'ModelB', 'year_from' => 2020, 'year_to' => 2024, 'stock_qty' => 7],
             ],
         ])->assertCreated()->assertJsonPath('product.primary_part_number', null);
         $product = Product::findOrFail($response->json('product.id'));

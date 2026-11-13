@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ProductFitment extends Model
 {
     protected $fillable = [
-        'product_id', 'car_brand_id', 'car_model_id', 'year_from', 'year_to', 'engine',
+        'product_id', 'category_id', 'car_brand_id', 'car_model_id', 'year_from', 'year_to', 'engine',
         'mapped_part_number', 'cost_price', 'stock_qty',
     ];
 
@@ -20,6 +20,8 @@ class ProductFitment extends Model
     {
         return $this->hasMany(StockMovement::class);
     }
+
+    public function category() { return $this->belongsTo(Category::class); }
 
     public function product()
     {

@@ -101,6 +101,8 @@ class Product extends Model
             'fitment_hint' => $this->fitmentHint(),
             'fitments' => $this->fitments->map(fn (ProductFitment $f) => [
                 'id' => $f->id,
+                'category_id' => $f->category_id,
+                'category_name' => $f->category?->name,
                 'brand' => $f->brand?->name,
                 'model' => $f->model?->name,
                 'year_from' => $f->year_from,

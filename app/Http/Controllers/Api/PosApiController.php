@@ -108,18 +108,6 @@ class PosApiController extends Controller
         ], 201);
     }
 
-    private function stripCostForCashier(array $rows, Request $request): array
-    {
-        if ($request->user()->canViewCost()) {
-            return $rows;
-        }
-
-        return array_map(function ($row) {
-            unset($row['cost_price']);
-            return $row;
-        }, $rows);
-    }
-
     public function quickAdd(Request $request, StockService $stock, AuditService $audit, VehicleVariantService $variants)
     {
         abort_unless($request->user()->canSell() || $request->user()->canManageCatalog(), 403);
@@ -136,6 +124,15 @@ class PosApiController extends Controller
             'vehicle_brand' => ['nullable', 'string', 'max:60', 'required_with:vehicle_model'],
             'vehicle_model' => ['nullable', 'string', 'max:80', 'required_with:vehicle_brand'],
             'variants' => ['nullable', 'array'],
+            'variants.*.vehicle_brand' => ['required', 'string', 'max:60'],
+            'variants.*.vehicle_model' => ['required', 'string', 'max:80'],
+            'variants.*.year_from' => ['nullable', 'integer', 'between:1950,2100'],
+            'variants.*.year_to' => ['nullable', 'integer', 'between:1950,2100'],
+            'variants.*.mapped_part_number' => ['nullable', 'string', 'max:50'],
+            'variants.*.cost_price' => ['required', 'numeric', 'min:0'],
+            'variants.*.stock_qty' => ['required', 'numeric', 'min:0'],
+            'variants.*.category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'variants.*.category_name' => ['nullable', 'string', 'max:100'],
             'year_from' => ['nullable', 'integer', 'between:1950,2100'],
             'year_to' => ['nullable', 'integer', 'between:1950,2100', 'gte:year_from'],
             'mapped_part_number' => ['nullable', 'string', 'max:50'],
@@ -160,7 +157,7 @@ class PosApiController extends Controller
                 'track_stock' => true,
             ]);
 
-            $variantRows = $this->stripCostForCashier($data['variants'] ?? [], $request);
+            $variantRows = $data['variants'] ?? [];
             if (! empty($data['vehicle_brand']) && ! empty($data['vehicle_model'])) {
                 $variantRows[] = [
                     'vehicle_brand' => $data['vehicle_brand'],
@@ -197,17 +194,26 @@ class PosApiController extends Controller
 
         $data = $request->validate([
             'variants' => ['required', 'array', 'min:1'],
+            'variants.*.vehicle_brand' => ['required', 'string', 'max:60'],
+            'variants.*.vehicle_model' => ['required', 'string', 'max:80'],
+            'variants.*.year_from' => ['nullable', 'integer', 'between:1950,2100'],
+            'variants.*.year_to' => ['nullable', 'integer', 'between:1950,2100'],
+            'variants.*.mapped_part_number' => ['nullable', 'string', 'max:50'],
+            'variants.*.cost_price' => ['required', 'numeric', 'min:0'],
+            'variants.*.stock_qty' => ['required', 'numeric', 'min:0'],
+            'variants.*.category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'variants.*.category_name' => ['nullable', 'string', 'max:100'],
         ]);
 
         $beforeStock = (float) $product->fitments()->whereNotNull('stock_qty')->sum('stock_qty');
-        $variants->createMany($product, $this->stripCostForCashier($data['variants'], $request));
+        $variants->createMany($product, $data['variants']);
         $afterStock = (float) $product->fitments()->whereNotNull('stock_qty')->sum('stock_qty');
         if ($afterStock > $beforeStock) {
             $stock->apply($product, $request->user(), 'opening', $afterStock - $beforeStock, 0, (float) $product->cost_price, 'variant_stock', null, 'New variant opening stock');
         }
 
         $fitments = $product->fitments()
-            ->with(['brand', 'model'])
+            ->with(['brand', 'model', 'category'])
             ->get()
             ->map(fn ($fitment) => [
                 'id' => $fitment->id,
@@ -216,6 +222,8 @@ class PosApiController extends Controller
                 'model' => $fitment->model?->name,
                 'year_from' => $fitment->year_from,
                 'year_to' => $fitment->year_to,
+                'category_id' => $fitment->category_id,
+                'category_name' => $fitment->category?->name,
                 'mapped_part_number' => $fitment->mapped_part_number,
                 'stock_qty' => $fitment->stock_qty === null ? null : (float) $fitment->stock_qty,
             ]);
