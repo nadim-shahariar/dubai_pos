@@ -1,0 +1,190 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\Shift;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class PosFlowTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed();
+    }
+
+    private function cashier(): User
+    {
+        return User::where('email', 'cashier@gitgadgets.test')->firstOrFail();
+    }
+
+    private function manager(): User
+    {
+        return User::where('email', 'manager@gitgadgets.test')->firstOrFail();
+    }
+
+    public function test_cashier_can_complete_a_split_payment_sale_and_stock_decrements(): void
+    {
+        $cashier = $this->cashier();
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+        $before = (float) $product->stock_qty;
+
+        $response = $this->actingAs($cashier)->postJson('/api/pos/sales', [
+            'items' => [[
+                'product_id' => $product->id,
+                'qty' => 2,
+                'unit_price' => 125,
+                'discount_type' => 'none',
+                'discount_value' => 0,
+            ]],
+            'payments' => [
+                ['method' => 'cash', 'amount' => 200, 'tendered' => 200],
+                ['method' => 'card', 'amount' => 50, 'reference' => 'AUTH-1'],
+            ],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('sale.total', 250)
+            ->assertJsonPath('sale.vat_total', 11.9)
+            ->assertJsonPath('sale.change_total', 0)
+            ->assertJsonPath('sale.payment_status', 'paid');
+
+        $product->refresh();
+        $this->assertSame($before - 2, (float) $product->stock_qty);
+        $this->assertStringStartsWith('GG-2026-', Sale::latest('id')->first()->invoice_number);
+        $this->assertDatabaseHas('stock_movements', ['product_id' => $product->id, 'type' => 'sale', 'qty_out' => 2]);
+    }
+
+    public function test_cashier_search_hides_numeric_cost(): void
+    {
+        $response = $this->actingAs($this->cashier())->getJson('/api/pos/search?q=BP-101');
+
+        $response->assertOk()
+            ->assertJsonPath('data.0.primary_part_number', 'BP-101')
+            ->assertJsonMissingPath('data.0.cost_price')
+            ->assertJsonPath('data.0.secret_cost_code', 'MAE');
+    }
+
+    public function test_manager_search_can_see_cost(): void
+    {
+        $response = $this->actingAs($this->manager())->getJson('/api/pos/search?q=BP-101');
+
+        $response->assertOk()->assertJsonPath('data.0.cost_price', 82);
+    }
+
+    public function test_a_discount_above_the_cashier_limit_requires_a_manager_pin(): void
+    {
+        $cashier = $this->cashier();
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+        $payload = [
+            'items' => [[
+                'product_id' => $product->id,
+                'qty' => 1,
+                'unit_price' => 125,
+                'discount_type' => 'percent',
+                'discount_value' => 20,
+            ]],
+            'payments' => [['method' => 'cash', 'amount' => 100, 'tendered' => 100]],
+        ];
+
+        $this->actingAs($cashier)->postJson('/api/pos/sales', $payload)->assertStatus(422);
+
+        $this->actingAs($cashier)->postJson('/api/pos/sales', $payload + ['approval_pin' => '1234'])
+            ->assertCreated()
+            ->assertJsonPath('sale.total', 100);
+    }
+
+    public function test_quick_add_creates_a_sellable_product_and_marks_cost_pending_for_cashier(): void
+    {
+        $response = $this->actingAs($this->cashier())->postJson('/api/pos/quick-add', [
+            'name' => 'Rear Brake Shoe',
+            'primary_part_number' => 'BS-900',
+            'selling_price' => 140,
+            'secret_cost_code' => 'SHOE',
+            'stock_qty' => 4,
+            'category_id' => null,
+            'brand' => 'Aftermarket',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('product.primary_part_number', 'BS-900')
+            ->assertJsonPath('product.cost_pending', true)
+            ->assertJsonMissingPath('product.cost_price');
+
+        $this->assertDatabaseHas('products', ['primary_part_number' => 'BS-900', 'cost_pending' => 1, 'stock_qty' => 4]);
+        $this->assertDatabaseHas('stock_movements', ['type' => 'opening', 'qty_in' => 4]);
+    }
+
+    public function test_invoice_does_not_expose_secret_code_or_cost(): void
+    {
+        $sale = Sale::firstOrFail();
+
+        $response = $this->actingAs($this->cashier())->get(route('sales.invoice', $sale));
+
+        $response->assertOk()
+            ->assertDontSee('MAE')
+            ->assertDontSee('cost_price');
+    }
+
+    public function test_manager_can_issue_a_credit_note_and_restock(): void
+    {
+        $sale = Sale::whereHas('items', fn ($q) => $q->where('primary_part_number', 'BP-101'))->firstOrFail();
+        $item = $sale->items()->where('primary_part_number', 'BP-101')->firstOrFail();
+        $before = (float) $item->product->stock_qty;
+
+        $response = $this->actingAs($this->manager())->post(route('sales.return.store', $sale), [
+            'items' => [[
+                'sale_item_id' => $item->id,
+                'qty' => 1,
+                'restock' => '1',
+                'condition' => 'resellable',
+            ]],
+            'reason' => 'Wrong part',
+            'refund_method' => 'cash',
+        ]);
+
+        $response->assertRedirect(route('sales.show', $sale));
+        $this->assertDatabaseHas('returns', ['sale_id' => $sale->id, 'reason' => 'Wrong part']);
+        $this->assertDatabaseHas('return_items', ['sale_item_id' => $item->id, 'qty' => 1]);
+        $this->assertSame($before + 1, (float) $item->product->fresh()->stock_qty);
+    }
+
+    public function test_cashier_cannot_access_reports_or_the_catalogue_back_office(): void
+    {
+        $this->actingAs($this->cashier())->get('/reports/sales')->assertForbidden();
+        $this->actingAs($this->cashier())->get('/products')->assertForbidden();
+    }
+
+    public function test_cashier_can_open_the_pos_when_a_shift_is_open(): void
+    {
+        $this->assertNotNull(Shift::openFor($this->cashier()));
+
+        $this->actingAs($this->cashier())->get('/pos')
+            ->assertOk()
+            ->assertSee('Find a part')
+            ->assertSee('BP-101');
+    }
+
+    public function test_cashier_totals_endpoint_never_returns_cost(): void
+    {
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+
+        $this->actingAs($this->cashier())->postJson('/api/pos/totals', [
+            'items' => [['product_id' => $product->id, 'qty' => 1, 'unit_price' => 125]],
+        ])->assertOk()->assertJsonMissingPath('lines.0.cost_price');
+    }
+
+    public function test_cashier_cannot_edit_a_customer_credit_limit(): void
+    {
+        $customer = \App\Models\Customer::firstOrFail();
+
+        $this->actingAs($this->cashier())->get(route('customers.edit', $customer))->assertForbidden();
+    }
+}
