@@ -165,8 +165,10 @@ class PosApiController extends Controller
             }
             $variants->createMany($product, $variantRows);
 
-            if ((float) ($data['stock_qty'] ?? 0) > 0) {
-                $stock->apply($product->fresh(), $request->user(), 'opening', (float) $data['stock_qty'], 0, $cost, 'quick_add', $product->id, 'Quick Add opening stock');
+            $variantStock = (float) $product->fitments()->whereNotNull('stock_qty')->sum('stock_qty');
+            $openingStock = $variantStock > 0 ? $variantStock : (float) ($data['stock_qty'] ?? 0);
+            if ($openingStock > 0) {
+                $stock->apply($product->fresh(), $request->user(), 'opening', $openingStock, 0, $cost, 'quick_add', $product->id, 'Quick Add opening stock');
             }
 
             $audit->log('product.quick_added', $product, [
@@ -181,7 +183,7 @@ class PosApiController extends Controller
     }
 
 
-    public function addVariants(Request $request, Product $product, VehicleVariantService $variants)
+    public function addVariants(Request $request, Product $product, VehicleVariantService $variants, StockService $stock)
     {
         abort_unless($request->user()->canSell(), 403);
         abort_unless($product->is_active, 422, 'This product is not active.');
@@ -190,7 +192,12 @@ class PosApiController extends Controller
             'variants' => ['required', 'array', 'min:1'],
         ]);
 
+        $beforeStock = (float) $product->fitments()->whereNotNull('stock_qty')->sum('stock_qty');
         $variants->createMany($product, $this->stripCostForCashier($data['variants'], $request));
+        $afterStock = (float) $product->fitments()->whereNotNull('stock_qty')->sum('stock_qty');
+        if ($afterStock > $beforeStock) {
+            $stock->apply($product, $request->user(), 'opening', $afterStock - $beforeStock, 0, (float) $product->cost_price, 'variant_stock', null, 'New variant opening stock');
+        }
 
         $fitments = $product->fitments()
             ->with(['brand', 'model'])

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Models\ProductFitment;
 use App\Models\StockMovement;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
@@ -19,6 +20,7 @@ class StockService
         ?string $referenceType = null,
         ?int $referenceId = null,
         ?string $note = null,
+        ?ProductFitment $fitment = null,
     ): StockMovement {
         $before = (float) $product->stock_qty;
         $balance = round($before + $qtyIn - $qtyOut, 3);
@@ -29,11 +31,24 @@ class StockService
             ]);
         }
 
+        if ($fitment && $fitment->stock_qty !== null) {
+            $variantBefore = (float) $fitment->stock_qty;
+            $variantBalance = round($variantBefore + $qtyIn - $qtyOut, 3);
+            if ($variantBalance < -0.0001) {
+                throw ValidationException::withMessages([
+                    'stock' => "Not enough stock for variant {$fitment->mapped_part_number}. Available: ".number_format($variantBefore, 3).', requested: '.number_format($qtyOut, 3).'.',
+                ]);
+            }
+            $fitment->stock_qty = $variantBalance;
+            $fitment->save();
+        }
+
         $product->stock_qty = $balance;
         $product->save();
 
         return StockMovement::create([
             'product_id' => $product->id,
+            'product_fitment_id' => $fitment?->id,
             'user_id' => $user->id,
             'type' => $type,
             'qty_in' => $qtyIn,

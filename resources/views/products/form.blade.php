@@ -76,7 +76,7 @@
             <div class="card-body">
                 <div class="table-wrap" style="border:1px solid var(--line);border-radius:9px">
                     <table class="table" id="product-variants" data-variant-table style="margin:0">
-                        <thead><tr><th>Vehicle brand</th><th>Model</th><th>Year from</th><th>Year to</th><th>Part number *</th><th></th></tr></thead>
+                        <thead><tr><th>Vehicle brand</th><th>Model</th><th>Year from</th><th>Year to</th><th>Part number *</th><th>Stock</th><th></th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -98,13 +98,14 @@
             <div class="card-body">
                 <div class="table-wrap mb-2">
                     <table class="table">
-                        <thead><tr><th>Vehicle</th><th>Years</th><th>Part number</th><th></th></tr></thead>
+                        <thead><tr><th>Vehicle</th><th>Years</th><th>Part number</th><th>Stock</th><th></th></tr></thead>
                         <tbody>
                         @forelse($product->fitments as $fitment)
                             <tr>
                                 <td>{{ $fitment->brand?->name }} {{ $fitment->model?->name }}<div class="sub">{{ $fitment->engine }}</div></td>
                                 <td>{{ $fitment->year_from }}–{{ $fitment->year_to }}</td>
                                 <td class="mono">{{ $fitment->mapped_part_number ?: '—' }}</td>
+                                <td>{{ $fitment->stock_qty === null ? 'Inherit' : number_format((float) $fitment->stock_qty, 3) }}</td>
                                 <td class="text-right">
                                     <form method="POST" action="{{ route('products.fitments.destroy', [$product, $fitment]) }}" data-confirm="Remove this fitment?">
                                         @csrf @method('DELETE')
@@ -113,7 +114,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="4"><div class="empty" style="padding:18px">No fitment recorded. This product is searchable by part number only.</div></td></tr>
+                            <tr><td colspan="5"><div class="empty" style="padding:18px">No fitment recorded. This product is searchable by part number only.</div></td></tr>
                         @endforelse
                         </tbody>
                     </table>
@@ -126,7 +127,7 @@
                     </div>
                     <div class="table-wrap" style="border:1px solid var(--line);border-radius:9px">
                         <table class="table" id="fitment-variants" data-variant-table style="margin:0">
-                            <thead><tr><th>Vehicle brand</th><th>Model</th><th>Year from</th><th>Year to</th><th>Part number *</th><th></th></tr></thead>
+                            <thead><tr><th>Vehicle brand</th><th>Model</th><th>Year from</th><th>Year to</th><th>Part number *</th><th>Stock</th><th></th></tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>

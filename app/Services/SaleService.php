@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\ProductFitment;
 use App\Models\Sale;
 use App\Models\Shift;
 use App\Support\InvoiceNumber;
@@ -83,9 +84,10 @@ class SaleService
 
                 $variantCost = null;
                 if (! empty($item['variant_sku'])) {
-                    $variantCost = $product->fitments()
+                    $variantFitment = $product->fitments()
                         ->where('mapped_part_number', $item['variant_sku'])
-                        ->value('cost_price');
+                        ->first();
+                    $variantCost = $variantFitment?->cost_price;
                 }
 
                 $lines[] = [
@@ -265,6 +267,14 @@ class SaleService
                 if (! $product->track_stock) {
                     continue;
                 }
+                $fitment = null;
+                if (! empty($line['variant_sku'])) {
+                    $fitment = ProductFitment::query()
+                        ->where('product_id', $product->id)
+                        ->where('mapped_part_number', $line['variant_sku'])
+                        ->lockForUpdate()
+                        ->first();
+                }
                 $this->stock->apply(
                     $product,
                     $user,
@@ -275,6 +285,7 @@ class SaleService
                     'sale',
                     $sale->id,
                     'Invoice '.$sale->invoice_number,
+                    $fitment,
                 );
             }
 

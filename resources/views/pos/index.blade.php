@@ -163,7 +163,7 @@
                 <button class="btn btn-secondary btn-sm" type="button" id="npv-add">+ Add variant</button>
             </div>
             <div class="new-variant-labels {{ auth()->user()->canViewCost() ? 'with-cost' : '' }}">
-                <span>Vehicle brand</span><span>Model</span><span>Year from</span><span>Year to</span><span>Part number *</span>
+                <span>Vehicle brand</span><span>Model</span><span>Year from</span><span>Year to</span><span>Part number *</span><span>Stock</span>
                 @if(auth()->user()->canViewCost())<span>Buying price</span>@endif
                 <span></span>
             </div>
@@ -195,7 +195,7 @@
                 <button class="btn btn-secondary btn-sm" type="button" id="add-new-variant">+ New variant</button>
             </div>
             <div class="new-variant-labels {{ auth()->user()->canViewCost() ? 'with-cost' : '' }}">
-                <span>Vehicle brand</span><span>Model</span><span>Year from</span><span>Year to</span><span>Part number *</span>
+                <span>Vehicle brand</span><span>Model</span><span>Year from</span><span>Year to</span><span>Part number *</span><span>Stock</span>
                 @if(auth()->user()->canViewCost())<span>Buying price</span>@endif
                 <span></span>
             </div>

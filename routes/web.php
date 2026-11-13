@@ -74,6 +74,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/inventory/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
         Route::get('/inventory/{product}', [InventoryController::class, 'show'])->name('inventory.show');
         Route::post('/inventory/{product}/adjust', [InventoryController::class, 'adjust'])->name('inventory.adjust');
+        Route::patch('/inventory/{product}/variants/{fitment}/stock', [InventoryController::class, 'variantStock'])->name('inventory.variant-stock');
         Route::post('/inventory/{product}/receive', [InventoryController::class, 'receive'])->name('inventory.receive');
     });
 

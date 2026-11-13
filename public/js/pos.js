@@ -246,6 +246,11 @@
         const skuInput = tr.querySelector('.entry-sku');
         skuInput.value = tr._variant.sku;
         skuInput.readOnly = true;
+        if (fitment.stock_qty !== null && fitment.stock_qty !== undefined) {
+            tr.querySelector('.entry-stock').value = Number(fitment.stock_qty);
+        } else if (tr._baseStock !== undefined) {
+            tr.querySelector('.entry-stock').value = tr._baseStock;
+        }
         setVariantInput(tr, `<button type="button" class="variant-picker selected" data-open-variants>
             ${esc(tr._variant.label)}<span class="change">${esc(tr._variant.sku)} · change / add</span>
         </button>`);
@@ -287,6 +292,7 @@
         code.value = product.secret_cost_code;
         code.readOnly = true;
         stock.value = Number(product.stock_qty);
+        tr._baseStock = Number(product.stock_qty);
         stock.readOnly = true;
         price.value = Number(product.selling_price);
         tr.querySelector('.entry-qty').value = 1;
@@ -324,6 +330,7 @@
         if (!sku.value || !silent) sku.value = /^[A-Za-z0-9][A-Za-z0-9._/-]{1,}$/.test(name) ? name.toUpperCase() : '';
         code.value = '';
         stock.value = 1;
+        tr._baseStock = 1;
         price.value = 0;
         tr._fitments = [];
         tr._newVariants = [];
@@ -414,6 +421,7 @@
                 const sku = tr.querySelector('.entry-sku');
                 sku.value = tr._baseSku || '';
                 sku.readOnly = false;
+                if (tr._baseStock !== undefined) tr.querySelector('.entry-stock').value = tr._baseStock;
             } else {
                 applyVariant(tr, tr._newVariants[Number(index)]);
             }
@@ -471,6 +479,7 @@
             <input data-new-year-from type="number" min="1950" max="2100" value="2018" placeholder="From">
             <input data-new-year-to type="number" min="1950" max="2100" value="2024" placeholder="To">
             <input data-new-mapped placeholder="Part number *">
+            <input data-new-stock type="number" min="0" step="0.001" placeholder="Stock (inherit if blank)">
             ${canViewCost ? '<input data-new-cost type="password" inputmode="decimal" autocomplete="off" placeholder="Buying price">' : ''}
             <button type="button" class="remove" data-remove-new-variant>×</button>
         `;
@@ -480,6 +489,7 @@
         row.querySelector('[data-new-year-from]').value = values.year_from || 2018;
         row.querySelector('[data-new-year-to]').value = values.year_to || 2024;
         row.querySelector('[data-new-mapped]').value = values.mapped_part_number || '';
+        row.querySelector('[data-new-stock]').value = values.stock_qty ?? '';
         const cost = row.querySelector('[data-new-cost]');
         if (cost) cost.value = values.cost_price ?? '';
 
@@ -516,6 +526,7 @@
             year_from: Number(row.querySelector('[data-new-year-from]').value || 0),
             year_to: Number(row.querySelector('[data-new-year-to]').value || 0),
             mapped_part_number: row.querySelector('[data-new-mapped]').value.trim(),
+            stock_qty: row.querySelector('[data-new-stock]')?.value === '' ? null : Number(row.querySelector('[data-new-stock]')?.value),
             cost_price: row.querySelector('[data-new-cost]')?.value.trim() || null,
         })).filter(row => row.vehicle_brand || row.vehicle_model || row.mapped_part_number);
     };
@@ -787,6 +798,9 @@
             if (!row.is_new) continue;
             if (!row.sku || !row.code) throw new Error('New product ' + row.name + ' needs an SKU and buying code.');
             if (row.stock < row.qty) throw new Error('Opening stock for ' + row.name + ' must cover the sold quantity.');
+            const hasVariantStock = (row.variants || []).some(variant => variant.stock_qty !== null && variant.stock_qty !== undefined && variant.stock_qty !== '');
+            const variantStock = (row.variants || []).reduce((sum, variant) => sum + Number(variant.stock_qty || 0), 0);
+            const openingStock = hasVariantStock ? variantStock : row.stock;
             const data = await api('/api/pos/quick-add', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -794,7 +808,7 @@
                     primary_part_number: row.base_sku || row.sku,
                     selling_price: row.price,
                     secret_cost_code: row.code,
-                    stock_qty: row.stock,
+                    stock_qty: openingStock,
                     cost_price: row.cost ?? undefined,
                     variants: row.variants,
                 }),

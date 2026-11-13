@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
 use App\Models\Product;
+use App\Models\ProductFitment;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Shift;
@@ -204,6 +205,44 @@ class PosFlowTest extends TestCase
 
         $this->assertDatabaseHas('products', ['primary_part_number' => 'CAT-QA-001', 'cost_pending' => 1]);
         $this->assertDatabaseHas('product_fitments', ['mapped_part_number' => 'CAT-QA-M2']);
+    }
+
+    public function test_variant_stock_is_separate_from_product_stock(): void
+    {
+        $cashier = $this->cashier();
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+        $fitment = ProductFitment::where('product_id', $product->id)->where('mapped_part_number', 'TOY-BP-001')->firstOrFail();
+        $fitment->update(['stock_qty' => 2]);
+        $productBefore = (float) $product->stock_qty;
+
+        $this->actingAs($cashier)->postJson('/api/pos/sales', [
+            'items' => [[
+                'product_id' => $product->id,
+                'qty' => 1,
+                'unit_price' => 125,
+                'variant_label' => 'Toyota Camry 2018–2024',
+                'variant_sku' => 'TOY-BP-001',
+            ]],
+            'payments' => [['method' => 'cash', 'amount' => 125, 'tendered' => 125]],
+        ])->assertCreated();
+
+        $this->assertSame(1.0, (float) $fitment->fresh()->stock_qty);
+        $this->assertSame($productBefore - 1, (float) $product->fresh()->stock_qty);
+        $this->assertDatabaseHas('stock_movements', ['product_fitment_id' => $fitment->id, 'qty_out' => 1]);
+
+        $this->actingAs($cashier)->postJson('/api/pos/sales', [
+            'items' => [[
+                'product_id' => $product->id,
+                'qty' => 2,
+                'unit_price' => 125,
+                'variant_label' => 'Toyota Camry 2018–2024',
+                'variant_sku' => 'TOY-BP-001',
+            ]],
+            'payments' => [['method' => 'cash', 'amount' => 250, 'tendered' => 250]],
+        ])->assertStatus(422)->assertJsonValidationErrors('stock');
+
+        $this->assertSame(1.0, (float) $fitment->fresh()->stock_qty);
+        $this->assertSame($productBefore - 1, (float) $product->fresh()->stock_qty);
     }
 
     public function test_cashier_can_complete_a_credit_sale_for_a_customer(): void

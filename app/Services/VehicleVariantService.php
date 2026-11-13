@@ -57,6 +57,13 @@ class VehicleVariantService
                 ]);
             }
 
+            $stock = $row['stock_qty'] ?? null;
+            if ($stock !== null && $stock !== '' && (! is_numeric($stock) || (float) $stock < 0)) {
+                throw ValidationException::withMessages([
+                    "variants.{$index}.stock_qty" => 'Variant stock must be zero or more.',
+                ]);
+            }
+
             $normalised[] = [
                 'vehicle_brand' => $brand,
                 'vehicle_model' => $model,
@@ -64,6 +71,7 @@ class VehicleVariantService
                 'year_to' => $yearTo,
                 'mapped_part_number' => $mapped,
                 'cost_price' => ($cost === null || $cost === '') ? null : round((float) $cost, 2),
+                'stock_qty' => ($stock === null || $stock === '') ? null : round((float) $stock, 3),
             ];
         }
 
@@ -99,6 +107,7 @@ class VehicleVariantService
                 'year_to' => $row['year_to'],
                 'mapped_part_number' => $row['mapped_part_number'],
                 'cost_price' => $row['cost_price'] ?? null,
+                'stock_qty' => $row['stock_qty'] ?? null,
             ]);
             $created++;
         }

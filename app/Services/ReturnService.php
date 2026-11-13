@@ -79,6 +79,7 @@ class ReturnService
                     'restock' => (bool) ($item['restock'] ?? true),
                     'condition' => (string) ($item['condition'] ?? 'resellable'),
                     'cost_price' => (float) $saleItem->cost_price,
+                    'variant_sku' => $saleItem->variant_sku,
                 ];
             }
 
@@ -113,6 +114,13 @@ class ReturnService
                 if ($line['restock'] && $line['product_id']) {
                     $product = Product::find($line['product_id']);
                     if ($product && $product->track_stock) {
+                        $fitment = null;
+                        if (! empty($line['variant_sku'])) {
+                            $fitment = $product->fitments()
+                                ->where('mapped_part_number', $line['variant_sku'])
+                                ->lockForUpdate()
+                                ->first();
+                        }
                         $this->stock->apply(
                             $product,
                             $user,
@@ -123,6 +131,7 @@ class ReturnService
                             'return',
                             $return->id,
                             'Credit note '.$return->credit_note_number,
+                            $fitment,
                         );
                     }
                 }

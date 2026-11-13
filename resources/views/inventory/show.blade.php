@@ -18,6 +18,36 @@
     <div class="stat"><div class="stat-label">Selling price</div><div class="stat-value">AED {{ number_format((float) $product->selling_price, 2) }}</div><div class="stat-meta">Secret code <span class="code-chip">{{ $product->secret_cost_code }}</span></div></div>
 </div>
 
+
+@if($product->fitments->count())
+    <div class="card mt-3">
+        <div class="card-head"><h3>Variant stock</h3><span class="small muted">Each variant can hold its own stock</span></div>
+        <div class="table-wrap">
+            <table class="table">
+                <thead><tr><th>Vehicle variant</th><th>Part number</th><th class="text-right">Variant stock</th><th style="width:260px">Set counted stock</th></tr></thead>
+                <tbody>
+                @foreach($product->fitments as $fitment)
+                    <tr>
+                        <td><div class="main-cell">{{ $fitment->brand?->name }} {{ $fitment->model?->name }}</div><div class="sub">{{ $fitment->year_from }}–{{ $fitment->year_to }}</div></td>
+                        <td class="mono">{{ $fitment->mapped_part_number }}</td>
+                        <td class="text-right main-cell">{{ $fitment->stock_qty === null ? 'Inherit product' : number_format((float) $fitment->stock_qty, 3) }}</td>
+                        <td>
+                            <form method="POST" action="{{ route('inventory.variant-stock', [$product, $fitment]) }}" class="inline-form">
+                                @csrf
+                                @method('PATCH')
+                                <input name="stock_qty" type="number" step="0.001" min="0" value="{{ $fitment->stock_qty }}" placeholder="Set stock" required style="max-width:120px">
+                                <button class="btn btn-secondary btn-sm" type="submit">Save</button>
+                            </form>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+        <div class="card-body"><div class="small muted">Setting variant stock posts an adjustment movement and changes the product total by the difference. A variant marked <strong>Inherit product</strong> uses the product-level stock until you set its own quantity.</div></div>
+    </div>
+@endif
+
 <div class="grid-2">
     <div class="card">
         <div class="card-head"><h3>Receive stock</h3><span class="badge badge-teal">Purchase / goods in</span></div>

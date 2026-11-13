@@ -103,7 +103,7 @@
                 </div>
                 <div class="table-wrap" style="border:1px solid var(--line);border-radius:9px">
                     <table class="table" id="catalog-quick-variants" data-variant-table style="margin:0">
-                        <thead><tr><th>Vehicle brand</th><th>Model</th><th>Year from</th><th>Year to</th><th>Part number *</th><th></th></tr></thead>
+                        <thead><tr><th>Vehicle brand</th><th>Model</th><th>Year from</th><th>Year to</th><th>Part number *</th><th>Stock</th><th></th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>

@@ -104,6 +104,7 @@ class Product extends Model
                 'year_from' => $f->year_from,
                 'year_to' => $f->year_to,
                 'mapped_part_number' => $f->mapped_part_number,
+                'stock_qty' => $f->stock_qty === null ? null : (float) $f->stock_qty,
             ])->values(),
             'cost_pending' => $this->cost_pending,
             'track_stock' => $this->track_stock,

@@ -69,6 +69,7 @@
             <td><input name="variants[${index}][year_from]" type="number" min="1950" max="2100" value="${escapeAttribute(values.year_from || 2018)}" class="variant-year"></td>
             <td><input name="variants[${index}][year_to]" type="number" min="1950" max="2100" value="${escapeAttribute(values.year_to || 2024)}" class="variant-year"></td>
             <td><input name="variants[${index}][mapped_part_number]" value="${escapeAttribute(values.mapped_part_number || '')}" placeholder="Part number" maxlength="50"></td>
+            <td><input name="variants[${index}][stock_qty]" type="number" step="0.001" min="0" value="${escapeAttribute(values.stock_qty ?? '')}" class="variant-stock" placeholder="Stock"></td>
             <td class="text-right"><button type="button" class="btn btn-ghost btn-sm text-danger" data-remove-variant>×</button></td>
         `;
         tbody.appendChild(tr);
@@ -100,6 +101,7 @@
             year_from: Number(row.querySelector('input[name*="[year_from]"]')?.value || 0),
             year_to: Number(row.querySelector('input[name*="[year_to]"]')?.value || 0),
             mapped_part_number: row.querySelector('input[name*="[mapped_part_number]"]')?.value.trim() || '',
+            stock_qty: row.querySelector('input[name*="[stock_qty]"]')?.value === '' ? null : Number(row.querySelector('input[name*="[stock_qty]"]')?.value),
         })).filter(row => row.vehicle_brand || row.vehicle_model);
     };
 

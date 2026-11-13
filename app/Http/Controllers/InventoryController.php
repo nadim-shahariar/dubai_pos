@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductFitment;
 use App\Models\StockMovement;
 use App\Services\AuditService;
 use App\Services\StockService;
@@ -81,6 +82,49 @@ class InventoryController extends Controller
         });
 
         return back()->with('success', 'Stock received and average cost updated.');
+    }
+
+    public function variantStock(Request $request, Product $product, ProductFitment $fitment, StockService $stock, AuditService $audit)
+    {
+        abort_unless($fitment->product_id === $product->id, 404);
+
+        $data = $request->validate([
+            'stock_qty' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        \DB::transaction(function () use ($product, $fitment, $data, $request, $stock, $audit) {
+            $lockedProduct = Product::lockForUpdate()->findOrFail($product->id);
+            $lockedFitment = ProductFitment::lockForUpdate()->findOrFail($fitment->id);
+            $before = (float) ($lockedFitment->stock_qty ?? 0);
+            $target = round((float) $data['stock_qty'], 3);
+            $delta = round($target - $before, 3);
+
+            if (abs($delta) <= 0.0001) {
+                $lockedFitment->stock_qty = $target;
+                $lockedFitment->save();
+            } else {
+                $stock->apply(
+                    $lockedProduct,
+                    $request->user(),
+                    $delta > 0 ? 'adjustment_in' : 'adjustment_out',
+                    $delta > 0 ? $delta : 0,
+                    $delta < 0 ? abs($delta) : 0,
+                    (float) ($lockedFitment->cost_price ?? $lockedProduct->cost_price),
+                    'variant_stock',
+                    null,
+                    'Variant stock set to '.number_format($target, 3),
+                    $lockedFitment,
+                );
+            }
+
+            $audit->log('variant_stock.updated', $lockedFitment, [
+                'before' => $before,
+                'after' => $target,
+                'part_number' => $lockedFitment->mapped_part_number,
+            ], $request->user());
+        });
+
+        return back()->with('success', 'Variant stock updated.');
     }
 
     public function movements(Request $request)

@@ -63,8 +63,10 @@ class ProductController extends Controller
         $product = DB::transaction(function () use ($data, $request, $stock, $audit, $variants) {
             $product = Product::create($data);
             $variants->createMany($product, $request->input('variants', []));
-            if ((float) $request->input('stock_qty', 0) > 0 && $product->track_stock) {
-                $stock->apply($product->fresh(), $request->user(), 'opening', (float) $request->input('stock_qty'), 0, (float) $product->cost_price, 'opening', null, 'Opening stock');
+            $variantStock = (float) $product->fitments()->whereNotNull('stock_qty')->sum('stock_qty');
+            $openingStock = $variantStock > 0 ? $variantStock : (float) $request->input('stock_qty', 0);
+            if ($openingStock > 0 && $product->track_stock) {
+                $stock->apply($product->fresh(), $request->user(), 'opening', $openingStock, 0, (float) $product->cost_price, 'opening', null, 'Opening stock');
             }
             $audit->log('product.created', $product, ['part' => $product->primary_part_number, 'price' => $product->selling_price], $request->user());
 
@@ -99,9 +101,14 @@ class ProductController extends Controller
         return redirect()->route('products.edit', $product)->with('success', 'Product updated.');
     }
 
-    public function storeFitment(Request $request, Product $product, VehicleVariantService $variants)
+    public function storeFitment(Request $request, Product $product, VehicleVariantService $variants, StockService $stock)
     {
+        $beforeStock = (float) $product->fitments()->whereNotNull('stock_qty')->sum('stock_qty');
         $count = $variants->createMany($product, (array) $request->input('variants', []));
+        $afterStock = (float) $product->fitments()->whereNotNull('stock_qty')->sum('stock_qty');
+        if ($afterStock > $beforeStock && $product->track_stock) {
+            $stock->apply($product, $request->user(), 'opening', $afterStock - $beforeStock, 0, (float) $product->cost_price, 'variant_stock', null, 'New variant opening stock');
+        }
 
         if ($count === 0) {
             return back()->withErrors(['variants' => 'Add at least one vehicle brand and model.']);
