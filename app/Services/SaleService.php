@@ -81,6 +81,13 @@ class SaleService
                     $requested[$product->id] = ($requested[$product->id] ?? 0) + $qty;
                 }
 
+                $variantCost = null;
+                if (! empty($item['variant_sku'])) {
+                    $variantCost = $product->fitments()
+                        ->where('mapped_part_number', $item['variant_sku'])
+                        ->value('cost_price');
+                }
+
                 $lines[] = [
                     'product_id' => $product->id,
                     'primary_part_number' => $product->primary_part_number,
@@ -93,7 +100,7 @@ class SaleService
                     'discount_type' => $item['discount_type'] ?? 'none',
                     'discount_value' => (float) ($item['discount_value'] ?? 0),
                     'tax_rate' => (float) $product->tax_rate,
-                    'cost_price' => (float) $product->cost_price,
+                    'cost_price' => $variantCost !== null ? (float) $variantCost : (float) $product->cost_price,
                     'price_override' => $isOverride,
                     'override_reason' => $item['override_reason'] ?? null,
                 ];

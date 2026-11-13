@@ -165,7 +165,11 @@
                 <div><strong>New vehicle variant</strong><div class="small muted">Add one or more new variants now. They are saved to this product.</div></div>
                 <button class="btn btn-secondary btn-sm" type="button" id="add-new-variant">+ New variant</button>
             </div>
-            <div class="new-variant-labels"><span>Vehicle brand</span><span>Model</span><span>Year from</span><span>Year to</span><span>Part number *</span><span></span></div>
+            <div class="new-variant-labels {{ auth()->user()->canViewCost() ? 'with-cost' : '' }}">
+                <span>Vehicle brand</span><span>Model</span><span>Year from</span><span>Year to</span><span>Part number *</span>
+                @if(auth()->user()->canViewCost())<span>Buying price</span>@endif
+                <span></span>
+            </div>
             <div id="new-variant-rows"></div>
         </div>
         <div class="modal-foot">

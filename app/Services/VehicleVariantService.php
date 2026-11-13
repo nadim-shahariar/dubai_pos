@@ -50,12 +50,20 @@ class VehicleVariantService
                 ]);
             }
 
+            $cost = $row['cost_price'] ?? null;
+            if ($cost !== null && $cost !== '' && (! is_numeric($cost) || (float) $cost < 0)) {
+                throw ValidationException::withMessages([
+                    "variants.{$index}.cost_price" => 'The buying price must be zero or more.',
+                ]);
+            }
+
             $normalised[] = [
                 'vehicle_brand' => $brand,
                 'vehicle_model' => $model,
                 'year_from' => $yearFrom,
                 'year_to' => $yearTo,
                 'mapped_part_number' => $mapped,
+                'cost_price' => ($cost === null || $cost === '') ? null : round((float) $cost, 2),
             ];
         }
 
@@ -90,6 +98,7 @@ class VehicleVariantService
                 'year_from' => $row['year_from'],
                 'year_to' => $row['year_to'],
                 'mapped_part_number' => $row['mapped_part_number'],
+                'cost_price' => $row['cost_price'] ?? null,
             ]);
             $created++;
         }

@@ -101,6 +101,18 @@ class PosApiController extends Controller
         ], 201);
     }
 
+    private function stripCostForCashier(array $rows, Request $request): array
+    {
+        if ($request->user()->canViewCost()) {
+            return $rows;
+        }
+
+        return array_map(function ($row) {
+            unset($row['cost_price']);
+            return $row;
+        }, $rows);
+    }
+
     public function quickAdd(Request $request, StockService $stock, AuditService $audit, VehicleVariantService $variants)
     {
         abort_unless($request->user()->canSell(), 403);
@@ -141,7 +153,7 @@ class PosApiController extends Controller
                 'track_stock' => true,
             ]);
 
-            $variantRows = $data['variants'] ?? [];
+            $variantRows = $this->stripCostForCashier($data['variants'] ?? [], $request);
             if (! empty($data['vehicle_brand']) && ! empty($data['vehicle_model'])) {
                 $variantRows[] = [
                     'vehicle_brand' => $data['vehicle_brand'],
@@ -178,7 +190,7 @@ class PosApiController extends Controller
             'variants' => ['required', 'array', 'min:1'],
         ]);
 
-        $variants->createMany($product, $data['variants']);
+        $variants->createMany($product, $this->stripCostForCashier($data['variants'], $request));
 
         $fitments = $product->fitments()
             ->with(['brand', 'model'])

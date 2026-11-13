@@ -299,6 +299,45 @@ class PosFlowTest extends TestCase
         $this->assertDatabaseHas('car_models', ['name' => 'Sportage']);
     }
 
+    public function test_variant_buying_price_is_saved_and_used_for_cogs(): void
+    {
+        $owner = User::where('email', 'owner@gitgadgets.test')->firstOrFail();
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+
+        $this->actingAs($owner)->postJson('/api/pos/products/'.$product->id.'/variants', [
+            'variants' => [[
+                'vehicle_brand' => 'Mazda',
+                'vehicle_model' => 'Mazda3',
+                'year_from' => 2020,
+                'year_to' => 2024,
+                'mapped_part_number' => 'MAZ-BP-001',
+                'cost_price' => 55.25,
+            ]],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('product_fitments', [
+            'product_id' => $product->id,
+            'mapped_part_number' => 'MAZ-BP-001',
+            'cost_price' => 55.25,
+        ]);
+
+        $this->actingAs($this->cashier())->postJson('/api/pos/sales', [
+            'items' => [[
+                'product_id' => $product->id,
+                'qty' => 1,
+                'unit_price' => 125,
+                'variant_label' => 'Mazda Mazda3 2020–2024',
+                'variant_sku' => 'MAZ-BP-001',
+            ]],
+            'payments' => [['method' => 'cash', 'amount' => 125, 'tendered' => 125]],
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('sale_items', [
+            'variant_sku' => 'MAZ-BP-001',
+            'cost_price' => 55.25,
+        ]);
+    }
+
     public function test_cashier_can_create_multiple_variants_for_an_existing_product_from_pos(): void
     {
         $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();

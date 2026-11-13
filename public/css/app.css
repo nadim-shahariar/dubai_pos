@@ -524,3 +524,6 @@ table.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .shortcut-list { display: flex; flex-direction: column; gap: 7px; }
 .shortcut-list div { display: flex; align-items: center; gap: 12px; font-size: 12px; }
 .shortcut-list kbd { display: inline-flex; min-width: 46px; justify-content: center; background: #eef3f7; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 3px 6px; font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--navy); }
+.new-variant-row.with-cost { grid-template-columns: 1.05fr 1.05fr 60px 60px 1fr 82px 24px; }
+.new-variant-labels.with-cost { grid-template-columns: 1.05fr 1.05fr 60px 60px 1fr 82px 24px; }
+.new-variant-row input[type=password] { letter-spacing: .12em; }

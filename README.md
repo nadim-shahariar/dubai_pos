@@ -13,6 +13,7 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 - **Inline product creation** — when a product is not in the catalogue, create it from the sale row with SKU, secret buying code, selling price and opening stock. Vehicle variants can be selected in the row; the **＋** action duplicates the product for another variant.
 - **Table POS** — customer selection, walk-in default, **new-customer creation from the POS**, product search, a click-to-select variant picker that can add several existing variants or create multiple new vehicle variants at once, inline new-product rows, quantity, line discounts, price override with a reason, split cash/card/credit/bank payments and cash change.
 - **Variant part numbers** — every vehicle variant carries its own part number. The SKU column, invoice and receipt use the selected variant part number while retaining the parent product number.
+- **Variant buying price** — each new variant can carry a masked buying price. The value is stored on the variant and used for COGS; it is never shown in the sale table or on customer documents.
 - **Hidden buying price** — owners and managers can enter a masked buying price for a new product from the row lock action. It is stored as the numeric cost and never displayed in the table or on customer documents.
 - **Keyboard-first** — F2 add row, F3 product search, F4 new customer, F9 payment, and `?` for the shortcut reference.
 - **Approval controls** — discounts above the cashier limit and price overrides require a manager PIN (`1234` in the demo).
@@ -97,7 +98,7 @@ php artisan test
 
 The suite covers VAT-inclusive/exclusive calculations, invoice discounts, split-payment sales, stock decrementing, cost visibility, manager approval, Quick Add, invoice privacy, credit notes/restocking, and role restrictions.
 
-Current result: **23 tests passing** (including VAT, split payments, table POS, discounts, multi-variant product creation, variant snapshots, returns and cost-privacy checks).
+Current result: **24 tests passing** (including VAT, split payments, table POS, discounts, multi-variant product creation, variant snapshots, returns and cost-privacy checks).
 
 ## Key project files
 

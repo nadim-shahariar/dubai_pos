@@ -416,12 +416,15 @@
     const addNewVariantRow = () => {
         const row = document.createElement('div');
         row.className = 'new-variant-row';
+        const canViewCost = !!boot.user?.can_view_cost;
+        row.className = 'new-variant-row' + (canViewCost ? ' with-cost' : '');
         row.innerHTML = `
             <input data-new-brand list="variant-brand-list" placeholder="Vehicle brand" autocomplete="off">
             <input data-new-model list="variant-model-list" placeholder="Model" autocomplete="off">
             <input data-new-year-from type="number" min="1950" max="2100" value="2018" placeholder="From">
             <input data-new-year-to type="number" min="1950" max="2100" value="2024" placeholder="To">
             <input data-new-mapped placeholder="Part number *">
+            ${canViewCost ? '<input data-new-cost type="password" inputmode="decimal" autocomplete="off" placeholder="Buying price">' : ''}
             <button type="button" class="remove" data-remove-new-variant>×</button>
         `;
         $('#new-variant-rows').appendChild(row);
@@ -471,6 +474,7 @@
             year_from: Number(row.querySelector('[data-new-year-from]').value || 0),
             year_to: Number(row.querySelector('[data-new-year-to]').value || 0),
             mapped_part_number: row.querySelector('[data-new-mapped]').value.trim(),
+            cost_price: row.querySelector('[data-new-cost]')?.value.trim() || null,
         })).filter(row => row.vehicle_brand || row.vehicle_model);
     };
 

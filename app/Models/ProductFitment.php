@@ -8,8 +8,13 @@ class ProductFitment extends Model
 {
     protected $fillable = [
         'product_id', 'car_brand_id', 'car_model_id', 'year_from', 'year_to', 'engine',
-        'mapped_part_number',
+        'mapped_part_number', 'cost_price',
     ];
+
+    protected function casts(): array
+    {
+        return ['cost_price' => 'decimal:2'];
+    }
 
     public function product()
     {
