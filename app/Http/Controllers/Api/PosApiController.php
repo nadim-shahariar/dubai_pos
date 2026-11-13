@@ -130,6 +130,34 @@ class PosApiController extends Controller
         return response()->json(['product' => $product->toPosArray($request->user())], 201);
     }
 
+
+    public function addVariants(Request $request, Product $product, VehicleVariantService $variants)
+    {
+        abort_unless($request->user()->canSell(), 403);
+        abort_unless($product->is_active, 422, 'This product is not active.');
+
+        $data = $request->validate([
+            'variants' => ['required', 'array', 'min:1'],
+        ]);
+
+        $variants->createMany($product, $data['variants']);
+
+        $fitments = $product->fitments()
+            ->with(['brand', 'model'])
+            ->get()
+            ->map(fn ($fitment) => [
+                'id' => $fitment->id,
+                'label' => trim(($fitment->brand?->name ?? '').' '.($fitment->model?->name ?? '').' '.$fitment->year_from.'–'.$fitment->year_to),
+                'brand' => $fitment->brand?->name,
+                'model' => $fitment->model?->name,
+                'year_from' => $fitment->year_from,
+                'year_to' => $fitment->year_to,
+                'mapped_part_number' => $fitment->mapped_part_number ?: $product->primary_part_number,
+            ]);
+
+        return response()->json(['data' => $fitments]);
+    }
+
     public function openShift(Request $request, ShiftService $shifts)
     {
         abort_unless($request->user()->canSell(), 403);

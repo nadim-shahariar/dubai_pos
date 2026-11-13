@@ -105,10 +105,16 @@
                 <button type="button" class="mini-link" id="variant-select-all">Select all</button>
             </div>
             <div id="variant-options" class="variant-options"></div>
+
+            <div class="new-variant-head">
+                <div><strong>New vehicle variant</strong><div class="small muted">Add one or more new variants now. They are saved to this product.</div></div>
+                <button class="btn btn-secondary btn-sm" type="button" id="add-new-variant">+ New variant</button>
+            </div>
+            <div id="new-variant-rows"></div>
         </div>
         <div class="modal-foot">
             <button class="btn btn-secondary" type="button" data-close="variant-picker-modal">Cancel</button>
-            <button class="btn" type="button" id="variant-apply">Add selected variants</button>
+            <button class="btn" type="button" id="variant-apply">Save &amp; add selected</button>
         </div>
     </div>
 </div>

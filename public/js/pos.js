@@ -205,17 +205,12 @@
         price.value = Number(product.selling_price);
         tr.querySelector('.entry-qty').value = 1;
         tr.querySelector('.entry-discount').value = 0;
-        tr.querySelector('.duplicate-variant').style.display = product.fitments?.length ? '' : 'none';
+        tr.querySelector('.duplicate-variant').style.display = '';
         tr._fitments = product.fitments || [];
         tr._variant = null;
-
-        if (tr._fitments.length) {
-            setVariantInput(tr, `<button type="button" class="variant-picker" data-open-variants>
-                Choose variant(s)<span class="change">Click to select one or more</span>
-            </button>`);
-        } else {
-            setVariantInput(tr, '<input class="entry-input entry-variant" placeholder="Variant" autocomplete="off">');
-        }
+        setVariantInput(tr, `<button type="button" class="variant-picker" data-open-variants>
+            Choose / create variant(s)<span class="change">Click to select or add</span>
+        </button>`);
         if (product._selectedVariant) {
             applyVariant(tr, product._selectedVariant);
         }
@@ -333,62 +328,139 @@
 
     let variantRow = null;
 
+    const addNewVariantRow = () => {
+        const row = document.createElement('div');
+        row.className = 'new-variant-row';
+        row.innerHTML = `
+            <input data-new-brand list="variant-brand-list" placeholder="Vehicle brand" autocomplete="off">
+            <input data-new-model list="variant-model-list" placeholder="Model" autocomplete="off">
+            <input data-new-year-from type="number" min="1950" max="2100" value="2018" placeholder="From">
+            <input data-new-year-to type="number" min="1950" max="2100" value="2024" placeholder="To">
+            <input data-new-mapped placeholder="Mapped SKU (optional)">
+            <button type="button" class="remove" data-remove-new-variant>×</button>
+        `;
+        $('#new-variant-rows').appendChild(row);
+
+        const brand = row.querySelector('[data-new-brand]');
+        const model = row.querySelector('[data-new-model]');
+        const syncModelList = () => {
+            const list = $('#variant-model-list');
+            if (!list) return;
+            list.innerHTML = '';
+            const name = brand.value.trim().toLowerCase();
+            const vehicle = (boot.vehicles || []).find(v => String(v.name).toLowerCase() === name);
+            (vehicle?.models || []).forEach(item => {
+                const option = document.createElement('option');
+                option.value = typeof item === 'string' ? item : item.name;
+                list.appendChild(option);
+            });
+        };
+        brand.addEventListener('input', syncModelList);
+        model.addEventListener('focus', syncModelList);
+        row.querySelector('[data-remove-new-variant]').addEventListener('click', () => row.remove());
+        brand.focus();
+    };
+
     const openVariantPicker = (tr) => {
-        if (!tr._fitments?.length) return;
         variantRow = tr;
         $('#variant-picker-product').textContent = tr.querySelector('.entry-product').value + ' — select one or more vehicle variants.';
         const selectedLabel = tr._variant?.label || '';
-        $('#variant-options').innerHTML = tr._fitments.map((fitment, index) => {
-            const label = variantLabel(fitment);
-            const sku = fitment.mapped_part_number || tr.querySelector('.entry-sku').value;
-            return `<label class="variant-option">
-                <input type="checkbox" value="${index}" ${selectedLabel === label ? 'checked' : ''}>
-                <span><span class="v-name">${esc(label)}</span><span class="v-meta">SKU ${esc(sku)}</span></span>
-            </label>`;
-        }).join('');
+        $('#variant-options').innerHTML = tr._fitments?.length
+            ? tr._fitments.map((fitment, index) => {
+                const label = variantLabel(fitment);
+                const sku = fitment.mapped_part_number || tr.querySelector('.entry-sku').value;
+                return `<label class="variant-option">
+                    <input type="checkbox" value="${index}" ${selectedLabel === label ? 'checked' : ''}>
+                    <span><span class="v-name">${esc(label)}</span><span class="v-meta">SKU ${esc(sku)}</span></span>
+                </label>`;
+            }).join('')
+            : '<div class="empty" style="padding:12px 0">No saved variants yet. Create the first one below.</div>';
+        $('#new-variant-rows').innerHTML = '';
         openModal('variant-picker-modal');
     };
 
-    const applySelectedVariants = () => {
+    const collectNewVariants = () => {
+        return $$('#new-variant-rows .new-variant-row').map(row => ({
+            vehicle_brand: row.querySelector('[data-new-brand]').value.trim(),
+            vehicle_model: row.querySelector('[data-new-model]').value.trim(),
+            year_from: Number(row.querySelector('[data-new-year-from]').value || 0),
+            year_to: Number(row.querySelector('[data-new-year-to]').value || 0),
+            mapped_part_number: row.querySelector('[data-new-mapped]').value.trim(),
+        })).filter(row => row.vehicle_brand || row.vehicle_model);
+    };
+
+    const applySelectedVariants = async () => {
         if (!variantRow) return;
+        const row = variantRow;
         const selected = Array.from($('#variant-options').querySelectorAll('input[type=checkbox]:checked'))
             .map(input => Number(input.value))
-            .filter(index => Number.isInteger(index) && variantRow._fitments[index]);
-        const row = variantRow;
-        closeModal('variant-picker-modal');
-        if (!selected.length) {
-            row._variant = null;
-            setVariantInput(row, `<button type="button" class="variant-picker" data-open-variants>Choose variant(s)<span class="change">Click to select one or more</span></button>`);
-            recalc();
+            .filter(index => Number.isInteger(index) && row._fitments[index]);
+        const newVariants = collectNewVariants();
+        const invalid = newVariants.find(v => !v.vehicle_brand || !v.vehicle_model);
+        if (invalid) {
+            toast('Each new variant needs a vehicle brand and model.', 'error');
+            return;
+        }
+        if (!selected.length && !newVariants.length) {
+            toast('Select an existing variant or add a new one.', 'error');
             return;
         }
 
-        const base = {
-            product_id: Number(row.dataset.productId),
-            id: Number(row.dataset.productId),
-            name: row.querySelector('.entry-product').value,
-            primary_part_number: row.querySelector('.entry-sku').value,
-            secret_cost_code: row.querySelector('.entry-code').value,
-            stock_qty: Number(row.querySelector('.entry-stock').value),
-            selling_price: Number(row.querySelector('.entry-price').value),
-            fitments: row._fitments,
-        };
-        applyVariant(row, row._fitments[selected[0]]);
+        try {
+            $('#variant-apply').disabled = true;
+            let chosen = selected.map(index => row._fitments[index]);
 
-        // Duplicate the product row for each additional variant selected.
-        selected.slice(1).forEach(index => {
-            const newRow = addRow({ ...base, _selectedVariant: base.fitments[index] });
-            newRow.querySelector('.entry-price').value = row.querySelector('.entry-price').value;
-            newRow.querySelector('.entry-qty').value = 1;
-        });
-        variantRow = null;
-        recalc();
+            if (newVariants.length) {
+                const data = await api(`/api/pos/products/${row.dataset.productId}/variants`, {
+                    method: 'POST',
+                    body: JSON.stringify({ variants: newVariants }),
+                });
+                row._fitments = data.data;
+                newVariants.forEach(variant => {
+                    const found = data.data.find(fitment =>
+                        String(fitment.brand).toLowerCase() === variant.vehicle_brand.toLowerCase()
+                        && String(fitment.model).toLowerCase() === variant.vehicle_model.toLowerCase()
+                        && Number(fitment.year_from) === Number(variant.year_from)
+                        && Number(fitment.year_to) === Number(variant.year_to)
+                    );
+                    if (found && !chosen.some(item => item.label === found.label)) chosen.push(found);
+                });
+            }
+
+            closeModal('variant-picker-modal');
+            if (!chosen.length) { variantRow = null; toast('No variant was added.', 'error'); return; }
+
+            const base = {
+                product_id: Number(row.dataset.productId),
+                id: Number(row.dataset.productId),
+                name: row.querySelector('.entry-product').value,
+                primary_part_number: row.querySelector('.entry-sku').value,
+                secret_cost_code: row.querySelector('.entry-code').value,
+                stock_qty: Number(row.querySelector('.entry-stock').value),
+                selling_price: Number(row.querySelector('.entry-price').value),
+                fitments: row._fitments,
+            };
+            applyVariant(row, chosen[0]);
+            chosen.slice(1).forEach(fitment => {
+                const newRow = addRow({ ...base, _selectedVariant: fitment });
+                newRow.querySelector('.entry-price').value = row.querySelector('.entry-price').value;
+                newRow.querySelector('.entry-qty').value = 1;
+            });
+            recalc();
+            variantRow = null;
+            toast(chosen.length + ' variant' + (chosen.length === 1 ? '' : 's') + ' added.');
+        } catch (e) {
+            toast(e.message, 'error');
+        } finally {
+            $('#variant-apply').disabled = false;
+        }
     };
 
     $('#variant-apply').addEventListener('click', applySelectedVariants);
+    $('#add-new-variant').addEventListener('click', addNewVariantRow);
     $('#variant-select-all').addEventListener('click', () => {
         const boxes = $$('#variant-options input[type=checkbox]');
-        const allChecked = boxes.every(box => box.checked);
+        const allChecked = boxes.length > 0 && boxes.every(box => box.checked);
         boxes.forEach(box => { box.checked = !allChecked; });
     });
 

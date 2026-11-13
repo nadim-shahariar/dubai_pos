@@ -298,6 +298,25 @@ class PosFlowTest extends TestCase
         $this->assertDatabaseHas('car_models', ['name' => 'Sportage']);
     }
 
+    public function test_cashier_can_create_multiple_variants_for_an_existing_product_from_pos(): void
+    {
+        $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
+
+        $response = $this->actingAs($this->cashier())
+            ->postJson('/api/pos/products/'.$product->id.'/variants', [
+                'variants' => [
+                    ['vehicle_brand' => 'Mazda', 'vehicle_model' => 'Mazda6', 'year_from' => 2020, 'year_to' => 2024, 'mapped_part_number' => 'MAZ-BP-101'],
+                    ['vehicle_brand' => 'Mazda', 'vehicle_model' => 'CX-5', 'year_from' => 2021, 'year_to' => 2024, 'mapped_part_number' => 'MAZ-BP-102'],
+                ],
+            ]);
+
+        $response->assertOk()->assertJsonCount(4, 'data');
+        $this->assertDatabaseHas('car_brands', ['name' => 'Mazda']);
+        $this->assertDatabaseHas('car_models', ['name' => 'Mazda6']);
+        $this->assertDatabaseHas('product_fitments', ['product_id' => $product->id, 'mapped_part_number' => 'MAZ-BP-101']);
+        $this->assertDatabaseHas('product_fitments', ['product_id' => $product->id, 'mapped_part_number' => 'MAZ-BP-102']);
+    }
+
     public function test_cashier_totals_endpoint_never_returns_cost(): void
     {
         $product = Product::where('primary_part_number', 'BP-101')->firstOrFail();
