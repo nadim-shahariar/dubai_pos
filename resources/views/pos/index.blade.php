@@ -55,7 +55,7 @@
             <button type="button" class="btn btn-secondary" id="add-row-btn">+ Add product row</button>
             <button type="button" class="btn btn-ghost" id="clear-rows-btn">Clear all</button>
             <span class="entry-help">Type a product name, SKU, or key. Pick a suggestion, or choose <strong>Create new</strong> to add a new product inline.</span>
-            <span class="entry-shortcuts"><b>F2</b> add row · <b>F3</b> product · <b>F4</b> customer · <b>F9</b> cash / card · <b>F10</b> credit · <b>?</b> help</span>
+            <span class="entry-shortcuts"><b>F2</b> add row · <b>F3</b> product · <b>F4</b> customer · <b>F9</b> cash / card · <b>F10</b> credit · <b>Enter</b> next field · <b>?</b> help</span>
         </div>
     </section>
 
@@ -142,6 +142,7 @@
                 <div><kbd>Enter</kbd><span>Pick the first product suggestion</span></div>
                 <div><kbd>F9</kbd><span>Cash / card sale</span></div>
                 <div><kbd>F10</kbd><span>Credit sale</span></div>
+                <div><kbd>Enter</kbd><span>Move to the next field</span></div>
                 <div><kbd>Esc</kbd><span>Close the open modal</span></div>
                 <div><kbd>?</kbd><span>Show this help</span></div>
             </div>

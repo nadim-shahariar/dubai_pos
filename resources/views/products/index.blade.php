@@ -77,7 +77,7 @@
 <div class="modal-backdrop" id="quick-product-modal">
     <div class="modal wide">
         <div class="modal-head">
-            <div><h2>Quick add product</h2><p>Create the core product and its vehicle variants without leaving the catalogue.</p></div>
+            <div><h2>Quick add product</h2><p>Create the core product and its vehicle variants without leaving the catalogue. Press <strong>Enter</strong> to move to the next field.</p></div>
             <button class="modal-close" type="button" data-close-quick-product>×</button>
         </div>
         <form id="catalog-quick-form" data-edit-template="{{ route('products.edit', ['product' => '__ID__']) }}">
@@ -141,6 +141,15 @@ window.VEHICLE_CATALOG = @json($brands->map(fn ($brand) => ['name' => $brand->na
             open();
         }
         if (event.key === 'Escape' && modal.classList.contains('open')) close();
+    });
+
+    form.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' || !event.target.matches('input, select, textarea')) return;
+        event.preventDefault();
+        const fields = Array.from(form.querySelectorAll('input, select, textarea'))
+            .filter(field => !field.disabled && field.offsetParent !== null);
+        const index = fields.indexOf(event.target);
+        if (index >= 0 && fields[index + 1]) fields[index + 1].focus();
     });
 
     form.addEventListener('submit', async (event) => {

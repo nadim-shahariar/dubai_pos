@@ -166,8 +166,10 @@
         const create = e.target.closest('[data-create-product]');
         if (item && state.activeRow) {
             const product = state.activeResults[Number(item.dataset.productIndex)];
-            selectProduct(state.activeRow, product);
+            const row = state.activeRow;
+            selectProduct(row, product);
             hideSuggest();
+            focusVariantControl(row);
         }
         if (create && state.activeRow) {
             const term = state.activeRow.querySelector('.entry-product').value.trim();
@@ -437,13 +439,33 @@
         recalc();
     });
 
+    const focusVariantControl = (tr) => {
+        const target = tr?.querySelector('.variant-picker, [data-open-new-variants], .npv-select, .entry-variant');
+        target?.focus();
+    };
+
+    const focusNextEntryField = (current) => {
+        const fields = $$('#entry-body input:not([type=hidden]):not([readonly]):not([disabled]), #entry-body select:not([disabled]), #entry-body textarea:not([disabled])')
+            .filter(el => el.offsetParent !== null);
+        const index = fields.indexOf(current);
+        if (index >= 0 && fields[index + 1]) fields[index + 1].focus();
+    };
+
     $('#entry-body').addEventListener('keydown', (e) => {
-        if (e.key !== 'Enter' || !e.target.classList.contains('entry-product')) return;
-        const tr = e.target.closest('.entry-row');
-        if (tr && state.activeRow === tr && state.activeResults.length) {
+        if (e.key !== 'Enter') return;
+        if (e.target.classList.contains('entry-product')) {
+            const tr = e.target.closest('.entry-row');
+            if (tr && state.activeRow === tr && state.activeResults.length) {
+                e.preventDefault();
+                selectProduct(tr, state.activeResults[0]);
+                hideSuggest();
+                focusVariantControl(tr);
+                return;
+            }
+        }
+        if (e.target.matches('input, select, textarea')) {
             e.preventDefault();
-            selectProduct(tr, state.activeResults[0]);
-            hideSuggest();
+            focusNextEntryField(e.target);
         }
     });
 
