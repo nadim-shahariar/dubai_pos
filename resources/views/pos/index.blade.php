@@ -94,7 +94,7 @@
 
 {{-- Variant picker --}}
 <div class="modal-backdrop" id="variant-picker-modal">
-    <div class="modal small">
+    <div class="modal wide">
         <div class="modal-head">
             <div><h2>Select variants</h2><p id="variant-picker-product">Choose one or more variants for this product.</p></div>
             <button class="modal-close" data-close="variant-picker-modal" type="button">×</button>
@@ -110,6 +110,7 @@
                 <div><strong>New vehicle variant</strong><div class="small muted">Add one or more new variants now. They are saved to this product.</div></div>
                 <button class="btn btn-secondary btn-sm" type="button" id="add-new-variant">+ New variant</button>
             </div>
+            <div class="new-variant-labels"><span>Vehicle brand</span><span>Model</span><span>Year from</span><span>Year to</span><span>Mapped SKU</span><span></span></div>
             <div id="new-variant-rows"></div>
         </div>
         <div class="modal-foot">

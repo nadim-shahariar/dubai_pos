@@ -32,6 +32,10 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 |---|---|---|
 | ![](screenshots/invoice.png) | ![](screenshots/vat.png) | ![](screenshots/payment.png) |
 
+**Variant picker** — select several existing variants or create multiple new ones at once:
+
+![Variant picker](screenshots/variant-picker.png)
+
 ## Demo accounts
 
 All demo accounts use the password **`password`**. Manager approval PIN is **`1234`**.

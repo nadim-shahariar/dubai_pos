@@ -506,7 +506,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .variant-option:hover { border-color: var(--teal); background: var(--teal-soft); }
 .variant-option input { margin-top: 2px; accent-color: var(--teal); width: 15px; height: 15px; }
 .variant-option .v-name { font-size: 12px; font-weight: 700; }
-.variant-option .v-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.variant-option .v-meta { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
 
 .new-variant-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 7px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .new-variant-head strong { font-size: 12px; }
@@ -514,3 +514,5 @@ table.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .new-variant-row input { width: 100%; height: 32px; border: 1px solid #cfdae6; border-radius: 6px; padding: 0 6px; font-size: 11px; }
 .new-variant-row .remove { border: 0; background: transparent; color: var(--red); font-size: 15px; cursor: pointer; }
 @media (max-width: 700px) { .new-variant-row { grid-template-columns: 1fr 1fr; } }
+.new-variant-labels { display: grid; grid-template-columns: 1.1fr 1.1fr 70px 70px 1fr 28px; gap: 5px; margin-bottom: 4px; font-size: 8.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+@media (max-width: 700px) { .new-variant-labels { display: none; } }
