@@ -537,3 +537,19 @@ table.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .new-variant-labels { grid-template-columns: 1fr 1fr 56px 56px 1fr 62px 24px; }
 .new-variant-row.with-cost { grid-template-columns: 1fr 1fr 56px 56px 1fr 58px 76px 24px; }
 .new-variant-labels.with-cost { grid-template-columns: 1fr 1fr 56px 56px 1fr 58px 76px 24px; }
+
+/* Recent transactions on POS */
+.entry-recent { flex: 0 0 auto; border-top: 1px solid var(--line); background: #fbfdff; max-height: 168px; overflow-y: auto; }
+.entry-recent-head { display: flex; justify-content: space-between; align-items: center; padding: 7px 12px 5px; font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 800; position: sticky; top: 0; background: #fbfdff; z-index: 2; }
+.recent-list { display: flex; flex-direction: column; }
+.recent-item { display: grid; grid-template-columns: 1.1fr 1.5fr .8fr .8fr 1.5fr; align-items: center; gap: 8px; padding: 5px 12px; border-top: 1px solid #eef3f7; font-size: 10.5px; }
+.recent-item:hover { background: #f4f9fb; }
+.recent-invoice { font-family: var(--mono); font-weight: 700; }
+.recent-customer { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-total { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.recent-actions { display: flex; justify-content: flex-end; gap: 5px; }
+.recent-actions a, .recent-actions button { font-size: 9.5px; border: 0; background: transparent; color: var(--teal-dark); cursor: pointer; padding: 2px 3px; }
+.recent-actions .delete { color: var(--red); }
+.recent-empty { padding: 10px 12px; font-size: 10.5px; color: var(--muted); }
+.recent-item .badge { font-size: 8.5px; }
+@media (max-width: 900px) { .recent-item { grid-template-columns: 1fr 1fr .7fr; } .recent-customer, .recent-actions { grid-column: span 2; } }

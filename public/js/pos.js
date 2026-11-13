@@ -8,7 +8,7 @@
     const rate = Number(boot.tax_rate || 5);
     const inclusive = !!boot.prices_include_vat;
 
-    const state = { shift: boot.shift, payments: [], rowSeq: 0, lastSale: null, activeRow: null, activeResults: [] };
+    const state = { shift: boot.shift, payments: [], rowSeq: 0, lastSale: null, activeRow: null, activeResults: [], recent: {} };
 
     const toast = (message, type = 'success') => {
         const el = document.createElement('div');
@@ -91,6 +91,125 @@
             toast('Customer ' + c.name + ' created and selected.');
         } catch (err) { toast(err.message, 'error'); }
     });
+
+
+    // ---------------------------------------------------------------- recent transactions
+    const loadRecentSales = async () => {
+        try {
+            const data = await api('/api/pos/recent-sales');
+            state.recent = {};
+            (data.data || []).forEach(sale => { state.recent[sale.id] = sale; });
+            renderRecentSales(data.data || []);
+        } catch (e) {
+            $('#recent-list').innerHTML = '<div class="recent-empty">Could not load recent invoices.</div>';
+        }
+    };
+
+    const renderRecentSales = (sales) => {
+        if (!sales.length) {
+            $('#recent-list').innerHTML = '<div class="recent-empty">No recent transactions yet.</div>';
+            return;
+        }
+        $('#recent-list').innerHTML = sales.map(sale => {
+            const status = sale.status === 'voided'
+                ? '<span class="badge badge-red">Voided</span>'
+                : (sale.balance_due > 0 ? '<span class="badge badge-gold">Credit</span>' : '<span class="badge badge-green">Paid</span>');
+            return `<div class="recent-item">
+                <div class="recent-invoice">${esc(sale.invoice_number)}</div>
+                <div class="recent-customer" title="${esc(sale.customer_name)}">${esc(sale.customer_name)}</div>
+                <div class="recent-total">${money(sale.total)}</div>
+                <div>${status}</div>
+                <div class="recent-actions">
+                    <a href="${sale.invoice_url}" target="_blank">Print</a>
+                    ${sale.can_edit ? `<button type="button" data-edit-sale="${sale.id}">Edit</button>` : ''}
+                    ${sale.can_void ? `<button type="button" class="delete" data-void-sale="${sale.id}">Delete</button>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    };
+
+    $('#recent-list').addEventListener('click', (event) => {
+        const edit = event.target.closest('[data-edit-sale]');
+        const remove = event.target.closest('[data-void-sale]');
+        if (edit) openEditSale(state.recent[Number(edit.dataset.editSale)]);
+        if (remove) openVoidSale(state.recent[Number(remove.dataset.voidSale)]);
+    });
+
+    let editingSale = null;
+    const openEditSale = (sale) => {
+        if (!sale) return;
+        editingSale = sale;
+        $('#edit-sale-id').value = sale.id;
+        $('#edit-sale-title').textContent = sale.invoice_number + ' · ' + money(sale.total);
+        $('#edit-sale-customer').value = sale.customer_id ? String(sale.customer_id) : '';
+        $('#edit-sale-customer').disabled = Number(sale.balance_due) > 0;
+        $('#edit-sale-customer-hint').textContent = Number(sale.balance_due) > 0
+            ? 'Customer cannot be changed while this invoice has a credit balance.'
+            : 'Customer can be changed before any credit collection exists.';
+        $('#edit-sale-vehicle').value = sale.vehicle || '';
+        $('#edit-sale-notes').value = sale.notes || '';
+        $('#edit-sale-error').classList.add('hidden');
+        openModal('edit-sale-modal');
+    };
+
+    $('#edit-sale-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!editingSale) return;
+        try {
+            await api('/api/pos/sales/' + editingSale.id, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    customer_id: $('#edit-sale-customer').value || null,
+                    vehicle: $('#edit-sale-vehicle').value || null,
+                    notes: $('#edit-sale-notes').value || null,
+                }),
+            });
+            closeModal('edit-sale-modal');
+            toast('Transaction updated.');
+            loadRecentSales();
+        } catch (e) {
+            const box = $('#edit-sale-error');
+            box.textContent = e.message;
+            box.classList.remove('hidden');
+        }
+    });
+
+    let voidingSale = null;
+    const openVoidSale = (sale) => {
+        if (!sale) return;
+        voidingSale = sale;
+        $('#void-sale-id').value = sale.id;
+        $('#void-sale-title').textContent = 'Void ' + sale.invoice_number + ' · ' + money(sale.total) + '?';
+        $('#void-sale-reason').value = '';
+        const pin = $('#void-sale-pin');
+        if (pin) pin.value = '';
+        $('#void-sale-error').classList.add('hidden');
+        openModal('void-sale-modal');
+    };
+
+    $('#void-sale-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!voidingSale) return;
+        try {
+            await api('/api/pos/sales/' + voidingSale.id + '/void', {
+                method: 'POST',
+                body: JSON.stringify({
+                    reason: $('#void-sale-reason').value,
+                    approval_pin: $('#void-sale-pin')?.value || null,
+                }),
+            });
+            closeModal('void-sale-modal');
+            toast('Invoice voided and stock restored.');
+            loadRecentSales();
+        } catch (e) {
+            const box = $('#void-sale-error');
+            box.textContent = e.message;
+            box.classList.remove('hidden');
+        }
+    });
+
+    document.querySelectorAll('[data-close-edit-sale]').forEach(button => button.addEventListener('click', () => closeModal('edit-sale-modal')));
+    document.querySelectorAll('[data-close-void-sale]').forEach(button => button.addEventListener('click', () => closeModal('void-sale-modal')));
 
     // ---------------------------------------------------------------- hidden buying price
     let costRow = null;
@@ -885,6 +1004,7 @@
             closeModal('payment-modal');
             openModal('complete-modal');
             resetSale();
+            loadRecentSales();
         } catch (e) {
             toast(e.message, 'error');
             $('#complete-sale-btn').disabled = false;
@@ -954,5 +1074,6 @@
     });
 
     addRow();
+    loadRecentSales();
     if (!state.shift) setTimeout(() => $('#opening-float')?.focus(), 300);
 })();

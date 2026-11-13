@@ -14,6 +14,9 @@
     <button class="btn" onclick="window.print()">Print receipt</button>
 </div>
 <div class="receipt-80">
+    @if($sale->status === 'voided')
+        <div class="r-center" style="border:2px solid #b42318;padding:4px;margin-bottom:6px"><strong>VOIDED</strong></div>
+    @endif
     <div class="r-center">
         <h1>{{ $company }}</h1>
         <div class="r-small">{{ \App\Support\Pos::address() }}</div>

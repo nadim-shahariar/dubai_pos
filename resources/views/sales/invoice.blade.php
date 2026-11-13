@@ -17,6 +17,9 @@
 </div>
 
 <div class="invoice-a4">
+    @if($sale->status === 'voided')
+        <div class="alert alert-error" style="margin-bottom:14px"><strong>VOIDED INVOICE.</strong> This document is retained for audit only and is not valid for payment.</div>
+    @endif
     <div class="inv-head">
         <div class="inv-company">
             <div class="flex items-center gap-2 mb-1"><span class="brand-mark" style="width:34px;height:34px;font-size:11px">GG</span><h1>{{ $company }}</h1></div>

@@ -45,6 +45,7 @@ class PosController extends Controller
                 'name' => $user->name,
                 'role' => $user->role,
                 'can_view_cost' => $user->canViewCost(),
+                'can_approve' => $user->canApprove(),
             ],
             'shift' => $shift ? [
                 'id' => $shift->id,

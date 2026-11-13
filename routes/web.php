@@ -32,6 +32,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/products/{product}/variants', [PosApiController::class, 'addVariants'])->name('products.variants');
         Route::post('/totals', [PosApiController::class, 'totals'])->name('totals');
         Route::post('/sales', [PosApiController::class, 'sale'])->name('sales');
+        Route::get('/recent-sales', [PosApiController::class, 'recentSales'])->name('recent-sales');
+        Route::patch('/sales/{sale}', [PosApiController::class, 'updateSale'])->name('sales.update');
+        Route::post('/sales/{sale}/void', [PosApiController::class, 'voidSale'])->name('sales.void');
         Route::post('/shift/open', [PosApiController::class, 'openShift'])->name('shift.open');
         Route::post('/shift/close', [PosApiController::class, 'closeShift'])->name('shift.close');
         Route::get('/holds', [PosApiController::class, 'holds'])->name('holds');

@@ -57,6 +57,14 @@
             <span class="entry-help">Type a product name, SKU, or key. Pick a suggestion, or choose <strong>Create new</strong> to add a new product inline.</span>
             <span class="entry-shortcuts"><b>F2</b> add row · <b>F3</b> product · <b>F4</b> customer · <b>F9</b> cash / card · <b>F10</b> credit · <b>Enter</b> next field · <b>?</b> help</span>
         </div>
+
+        <section class="entry-recent">
+            <div class="entry-recent-head">
+                <span>Recent transactions</span>
+                <a href="{{ route('sales.index') }}" class="mini-link">All invoices →</a>
+            </div>
+            <div id="recent-list" class="recent-list"><div class="recent-empty">Loading recent invoices…</div></div>
+        </section>
     </section>
 
     <aside class="entry-summary">
@@ -93,6 +101,50 @@
                 <div class="quick-summary">Every cash sale, card payment, credit sale and refund is recorded against this shift.</div>
             </div>
             <div class="modal-foot"><button type="submit" class="btn">Open shift</button></div>
+        </form>
+    </div>
+</div>
+
+{{-- Edit recent sale --}}
+<div class="modal-backdrop" id="edit-sale-modal">
+    <div class="modal small">
+        <div class="modal-head"><div><h2>Edit transaction</h2><p id="edit-sale-title">Update the customer, vehicle or note.</p></div><button class="modal-close" type="button" data-close-edit-sale>×</button></div>
+        <form id="edit-sale-form">
+            <input type="hidden" id="edit-sale-id">
+            <div class="modal-body">
+                <div class="field"><label>Customer</label>
+                    <select id="edit-sale-customer">
+                        <option value="">Walk-in Customer</option>
+                        @foreach($boot['customers'] as $customer)
+                            <option value="{{ $customer['id'] }}">{{ $customer['name'] }}</option>
+                        @endforeach
+                    </select>
+                    <div class="hint" id="edit-sale-customer-hint">Customer cannot be changed once a credit balance or collection exists.</div>
+                </div>
+                <div class="field"><label>Vehicle</label><input id="edit-sale-vehicle" maxlength="150" placeholder="Vehicle / plate"></div>
+                <div class="field"><label>Note</label><textarea id="edit-sale-notes" maxlength="1000" placeholder="Internal note"></textarea></div>
+                <div class="alert alert-error hidden" id="edit-sale-error"></div>
+            </div>
+            <div class="modal-foot"><button class="btn btn-secondary" type="button" data-close-edit-sale>Cancel</button><button class="btn" type="submit">Save changes</button></div>
+        </form>
+    </div>
+</div>
+
+{{-- Void / delete recent sale --}}
+<div class="modal-backdrop" id="void-sale-modal">
+    <div class="modal small">
+        <div class="modal-head"><div><h2>Void invoice</h2><p id="void-sale-title">This removes the sale and restores stock.</p></div><button class="modal-close" type="button" data-close-void-sale>×</button></div>
+        <form id="void-sale-form">
+            <input type="hidden" id="void-sale-id">
+            <div class="modal-body">
+                <div class="alert alert-info">The invoice is kept for audit, marked <strong>voided</strong>; stock is restored. This cannot be undone.</div>
+                <div class="field"><label>Reason *</label><input id="void-sale-reason" required maxlength="255" placeholder="Wrong item, duplicate invoice, customer cancelled…"></div>
+                @if(!auth()->user()->canApprove())
+                    <div class="field"><label>Manager / owner PIN *</label><input id="void-sale-pin" type="password" inputmode="numeric" required autocomplete="off" placeholder="••••"></div>
+                @endif
+                <div class="alert alert-error hidden" id="void-sale-error"></div>
+            </div>
+            <div class="modal-foot"><button class="btn btn-secondary" type="button" data-close-void-sale>Cancel</button><button class="btn btn-danger" type="submit">Void invoice</button></div>
         </form>
     </div>
 </div>

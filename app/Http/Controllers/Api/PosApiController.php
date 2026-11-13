@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\PosHold;
 use App\Models\Product;
+use App\Models\Sale;
 use App\Models\Shift;
 use App\Services\AuditService;
 use App\Services\PricingService;
@@ -15,6 +16,7 @@ use App\Services\SearchService;
 use App\Services\ShiftService;
 use App\Services\StockService;
 use App\Services\VehicleVariantService;
+use App\Services\VoidSaleService;
 use App\Support\Pos;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -318,6 +320,102 @@ class PosApiController extends Controller
         $hold->update(['status' => 'discarded']);
 
         return response()->json(['ok' => true]);
+    }
+
+
+    public function recentSales(Request $request)
+    {
+        $sales = Sale::query()
+            ->with(['customer', 'user'])
+            ->withCount(['items', 'returns', 'collections'])
+            ->when($request->user()->isCashier(), fn ($query) => $query->where('user_id', $request->user()->id))
+            ->latest('sold_at')
+            ->limit(8)
+            ->get()
+            ->map(function (Sale $sale) {
+                $canVoid = $sale->status === 'completed' && $sale->returns_count === 0 && $sale->collections_count === 0;
+
+                return [
+                    'id' => $sale->id,
+                    'invoice_number' => $sale->invoice_number,
+                    'sold_at' => $sale->sold_at->toIso8601String(),
+                    'time' => $sale->sold_at->format('H:i'),
+                    'date' => $sale->sold_at->format('d M'),
+                    'customer_name' => $sale->customer_name,
+                    'customer_id' => $sale->customer_id,
+                    'items_count' => $sale->items_count,
+                    'total' => (float) $sale->total,
+                    'paid_total' => (float) $sale->paid_total,
+                    'balance_due' => (float) $sale->balance_due,
+                    'payment_status' => $sale->payment_status,
+                    'status' => $sale->status,
+                    'vehicle' => $sale->vehicle,
+                    'notes' => $sale->notes,
+                    'invoice_url' => route('sales.invoice', $sale),
+                    'receipt_url' => route('sales.receipt', $sale),
+                    'sale_url' => route('sales.show', $sale),
+                    'can_edit' => $sale->status !== 'voided',
+                    'can_void' => $canVoid,
+                ];
+            });
+
+        return response()->json(['data' => $sales]);
+    }
+
+    public function updateSale(Request $request, Sale $sale, AuditService $audit)
+    {
+        abort_unless($request->user()->canApprove() || $sale->user_id === $request->user()->id, 403);
+        abort_if($sale->status === 'voided', 422, 'A voided invoice cannot be edited.');
+
+        $data = $request->validate([
+            'customer_id' => ['nullable', 'exists:customers,id'],
+            'vehicle' => ['nullable', 'string', 'max:150'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $oldCustomer = $sale->customer_id;
+        if ((int) ($data['customer_id'] ?? 0) !== (int) $oldCustomer) {
+            if ((float) $sale->balance_due > 0 || $sale->collections()->exists()) {
+                throw ValidationException::withMessages(['customer_id' => 'Customer cannot be changed after a credit sale or collection. Edit only the vehicle or note.']);
+            }
+
+            $customer = ! empty($data['customer_id']) ? Customer::find($data['customer_id']) : null;
+            $sale->customer_id = $customer?->id;
+            $sale->customer_name = $customer ? ($customer->company_name ?: $customer->name) : 'Walk-in Customer';
+            $sale->customer_trn = $customer?->trn;
+        }
+
+        $sale->vehicle = $data['vehicle'] ?? null;
+        $sale->notes = $data['notes'] ?? null;
+        $sale->save();
+
+        $audit->log('sale.updated_from_pos', $sale, [
+            'customer_id' => $sale->customer_id,
+            'vehicle' => $sale->vehicle,
+        ], $request->user());
+
+        return response()->json(['sale' => ['id' => $sale->id, 'invoice_number' => $sale->invoice_number]]);
+    }
+
+    public function voidSale(Request $request, Sale $sale, VoidSaleService $voids)
+    {
+        abort_unless($request->user()->canApprove() || $sale->user_id === $request->user()->id, 403);
+
+        $data = $request->validate([
+            'approval_pin' => ['nullable', 'string', 'max:20'],
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $voided = $voids->void($request->user(), $sale, $data['approval_pin'] ?? null, $data['reason'] ?? null);
+
+        return response()->json([
+            'sale' => [
+                'id' => $voided->id,
+                'invoice_number' => $voided->invoice_number,
+                'status' => $voided->status,
+                'balance_due' => (float) $voided->balance_due,
+            ],
+        ]);
     }
 
     public function sale(Request $request, SaleService $sales)

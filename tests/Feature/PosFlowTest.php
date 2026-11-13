@@ -245,6 +245,70 @@ class PosFlowTest extends TestCase
         $this->assertSame($productBefore - 1, (float) $product->fresh()->stock_qty);
     }
 
+
+    public function test_recent_sales_and_sale_metadata_edit_are_available_from_pos(): void
+    {
+        $cashier = $this->cashier();
+        $sale = Sale::where('status', 'completed')->where('user_id', $cashier->id)->latest('id')->firstOrFail();
+
+        $this->actingAs($cashier)->getJson('/api/pos/recent-sales')
+            ->assertOk()
+            ->assertJsonFragment(['invoice_number' => $sale->invoice_number]);
+
+        $this->actingAs($cashier)->patchJson('/api/pos/sales/'.$sale->id, [
+            'vehicle' => 'Toyota Camry · TEST-PLATE',
+            'notes' => 'Edited from recent transactions',
+        ])->assertOk();
+
+        $sale->refresh();
+        $this->assertSame('Toyota Camry · TEST-PLATE', $sale->vehicle);
+        $this->assertSame('Edited from recent transactions', $sale->notes);
+    }
+
+    public function test_manager_can_void_a_recent_sale_and_stock_is_restored(): void
+    {
+        $manager = $this->manager();
+        $sale = Sale::where('status', 'completed')->whereDoesntHave('returns')->whereDoesntHave('collections')->latest('id')->firstOrFail();
+        $sale->load('items');
+        $beforeStocks = [];
+        foreach ($sale->items as $item) {
+            if ($item->product_id) {
+                $product = Product::find($item->product_id);
+                if ($product && $product->track_stock) {
+                    $beforeStocks[$item->product_id] = (float) $product->stock_qty;
+                }
+            }
+        }
+
+        $this->actingAs($manager)->postJson('/api/pos/sales/'.$sale->id.'/void', [
+            'reason' => 'Duplicate test invoice',
+        ])->assertOk()->assertJsonPath('sale.status', 'voided');
+
+        $sale->refresh();
+        $this->assertSame('voided', $sale->status);
+        $this->assertSame(0.0, (float) $sale->balance_due);
+
+        foreach ($sale->items as $item) {
+            if (isset($beforeStocks[$item->product_id])) {
+                $this->assertSame($beforeStocks[$item->product_id] + (float) $item->qty, (float) Product::find($item->product_id)->stock_qty);
+            }
+        }
+
+        $this->assertDatabaseHas('stock_movements', ['reference_type' => 'void', 'reference_id' => $sale->id]);
+    }
+
+    public function test_cashier_needs_a_manager_pin_to_void_a_sale(): void
+    {
+        $cashier = $this->cashier();
+        $sale = Sale::where('status', 'completed')->where('user_id', $cashier->id)->latest('id')->firstOrFail();
+
+        $this->actingAs($cashier)->postJson('/api/pos/sales/'.$sale->id.'/void', [
+            'reason' => 'Cashier attempt',
+        ])->assertStatus(422)->assertJsonValidationErrors('approval_pin');
+
+        $this->assertNotSame('voided', $sale->fresh()->status);
+    }
+
     public function test_cashier_can_complete_a_credit_sale_for_a_customer(): void
     {
         $cashier = $this->cashier();

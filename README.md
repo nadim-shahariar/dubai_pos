@@ -17,6 +17,7 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 - **Variant buying price** — each new variant can carry a masked buying price. The value is stored on the variant and used for COGS; it is never shown in the sale table or on customer documents.
 - **Hidden buying price** — owners and managers can enter a masked buying price for a new product from the row lock action. It is stored as the numeric cost and never displayed in the table or on customer documents.
 - **Keyboard-first** — F2 add row, F3 product search, F4 new customer, F9 cash/card payment, F10 credit sale, **Enter to move to the next field**, and `?` for the shortcut reference.
+- **Recent transactions** — the lower POS strip shows the latest invoices with Print, Edit (customer/vehicle/note) and Delete (void + stock restore, manager PIN for cashiers).
 - **Approval controls** — discounts above the cashier limit and price overrides require a manager PIN (`1234` in the demo).
 - **UAE VAT invoices** — 5% VAT, VAT-inclusive or VAT-exclusive pricing, sequential `GG-2026-000001` invoice numbers, 80 mm receipt and A4 tax invoice.
 - **Stock ledger** — every sale, receipt, return, adjustment and opening quantity is written to an append-only movement history. Weighted-average cost on receipt.
@@ -48,6 +49,10 @@ It is built around the two things a parts shop needs at the counter: **fitment-f
 **Catalogue quick add** — press F2 to create a product and its variants from the catalogue:
 
 ![Catalogue quick add](screenshots/catalog-quick-add.png)
+
+**Recent transactions** — lower POS strip with print, edit and void actions:
+
+![Recent transactions](screenshots/recent-transactions.png)
 
 **Cash & credit report** — counter sales, credit sales, collections and customer balances:
 
@@ -115,7 +120,7 @@ php artisan test
 
 The suite covers VAT-inclusive/exclusive calculations, invoice discounts, split-payment sales, stock decrementing, cost visibility, manager approval, Quick Add, invoice privacy, credit notes/restocking, and role restrictions.
 
-Current result: **32 tests passing** (including VAT, split payments, table POS, discounts, multi-variant product creation, variant snapshots, returns and cost-privacy checks).
+Current result: **35 tests passing** (including VAT, split payments, table POS, discounts, multi-variant product creation, variant snapshots, returns and cost-privacy checks).
 
 ## Key project files
 
