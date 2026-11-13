@@ -208,3 +208,9 @@ Product and variant part numbers are optional in catalogue forms and POS creatio
 ### POS variant category, buying price and opening stock
 
 Both POS variant dialogs offer a Category field: select an existing suggestion or type a new category name, which is created when the variant is saved. Categories are stored per variant; blank uses the product category. Each new POS variant requires explicitly entered buying price and stock (zero is valid). Part numbers remain optional. Cashiers may enter a buying price for a new variant without receiving saved numeric cost values in API responses. Run migrations to add the variant category relation.
+
+### Spreadsheet product entry
+
+Catalogue > Add products and Quick add product share a spreadsheet editor. Add multiple product rows, navigate with Enter/Tab and paste tab-separated cells copied from Excel. More columns exposes barcode, unit, VAT, reorder level, location and descriptions. Each product can expand into its own variant table with independent stock, category and buying price. Part numbers remain optional; stock and buying price must be explicitly entered (0 is valid).
+
+Save all products writes up to 100 products and 50 variants per product in one database transaction. Any invalid row rolls back the complete batch and returns its row/field error; entries stay in the browser for correction. Saved rows are locked to prevent accidental resubmission. Catalogue management roles can use the batch endpoint.

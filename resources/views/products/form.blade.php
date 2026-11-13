@@ -23,7 +23,7 @@
         <div class="card-head"><h3>Product details</h3>@if($product->exists)<span class="badge {{ $product->is_active ? 'badge-green' : 'badge-gray' }}">{{ $product->is_active ? 'Active' : 'Inactive' }}</span>@endif</div>
         <div class="card-body">
             <div class="form-grid">
-                <div class="field"><label>Part number (optional)</label><input name="primary_part_number" value="{{ old('primary_part_number', $product->primary_part_number) }}" required maxlength="50" placeholder="BP-101">@error('primary_part_number')<div class="error">{{ $message }}</div>@enderror</div>
+                <div class="field"><label>Part number (optional)</label><input name="primary_part_number" value="{{ old('primary_part_number', $product->primary_part_number) }}" maxlength="50" placeholder="BP-101">@error('primary_part_number')<div class="error">{{ $message }}</div>@enderror</div>
                 <div class="field"><label>Barcode / EAN</label><input name="barcode" value="{{ old('barcode', $product->barcode) }}" maxlength="64" placeholder="Optional">@error('barcode')<div class="error">{{ $message }}</div>@enderror</div>
                 <div class="field"><label>Product name *</label><input name="name" value="{{ old('name', $product->name) }}" required maxlength="150" placeholder="Front Brake Pad Set">@error('name')<div class="error">{{ $message }}</div>@enderror</div>
                 <div class="field"><label>Arabic name</label><input name="name_ar" value="{{ old('name_ar', $product->name_ar) }}" maxlength="150" placeholder="Optional"></div>

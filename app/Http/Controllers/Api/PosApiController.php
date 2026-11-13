@@ -108,7 +108,7 @@ class PosApiController extends Controller
         ], 201);
     }
 
-    public function quickAdd(Request $request, StockService $stock, AuditService $audit, VehicleVariantService $variants)
+    public function quickAdd(Request $request, StockService $stock, AuditService $audit, VehicleVariantService $variants, bool $acceptEnteredCost = false)
     {
         abort_unless($request->user()->canSell() || $request->user()->canManageCatalog(), 403);
         $data = $request->validate([
@@ -118,6 +118,13 @@ class PosApiController extends Controller
             'secret_cost_code' => ['required', 'string', 'min:2', 'max:20', 'unique:products,secret_cost_code'],
             'stock_qty' => ['nullable', 'numeric', 'min:0'],
             'category_id' => ['nullable', 'exists:categories,id'],
+            'category_name' => ['nullable', 'string', 'max:100'],
+            'unit' => ['nullable', 'string', 'max:20'],
+            'tax_rate' => ['nullable', 'numeric', 'between:0,100'],
+            'reorder_level' => ['nullable', 'numeric', 'min:0'],
+            'bin_location' => ['nullable', 'string', 'max:50'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'name_ar' => ['nullable', 'string', 'max:150'],
             'brand' => ['nullable', 'string', 'max:80'],
             'barcode' => ['nullable', 'string', 'max:64', 'unique:products,barcode'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
@@ -138,9 +145,16 @@ class PosApiController extends Controller
             'mapped_part_number' => ['nullable', 'string', 'max:50'],
         ]);
 
-        $product = DB::transaction(function () use ($request, $data, $stock, $audit, $variants) {
+        $product = DB::transaction(function () use ($request, $data, $stock, $audit, $variants, $acceptEnteredCost) {
             $canViewCost = $request->user()->canViewCost();
-            $cost = $canViewCost ? (float) ($data['cost_price'] ?? 0) : 0.0;
+            $cost = ($canViewCost || $acceptEnteredCost) ? (float) ($data['cost_price'] ?? 0) : 0.0;
+            $categoryId = $data['category_id'] ?? null;
+            if (! empty($data['category_name'])) {
+                $categoryName = trim($data['category_name']);
+                $category = Category::whereRaw('LOWER(name) = ?', [mb_strtolower($categoryName)])->first()
+                    ?? Category::firstOrCreate(['name' => $categoryName]);
+                $categoryId = $category->id;
+            }
 
             $product = Product::create([
                 'primary_part_number' => (strtoupper(trim((string) ($data['primary_part_number'] ?? ''))) ?: null),
@@ -149,10 +163,16 @@ class PosApiController extends Controller
                 'cost_price' => $cost,
                 'secret_cost_code' => strtoupper(trim($data['secret_cost_code'])),
                 'stock_qty' => 0,
-                'category_id' => $data['category_id'] ?? Category::firstOrCreate(['name' => 'Uncategorised'])->id,
+                'category_id' => $categoryId ?? Category::firstOrCreate(['name' => 'Uncategorised'])->id,
                 'brand' => $data['brand'] ?? null,
                 'barcode' => $data['barcode'] ?? null,
-                'cost_pending' => ! $canViewCost || (float) ($data['cost_price'] ?? 0) <= 0,
+                'unit' => $data['unit'] ?? 'piece',
+                'tax_rate' => $data['tax_rate'] ?? Pos::vatRate(),
+                'reorder_level' => $data['reorder_level'] ?? 0,
+                'bin_location' => $data['bin_location'] ?? null,
+                'description' => $data['description'] ?? null,
+                'name_ar' => $data['name_ar'] ?? null,
+                'cost_pending' => (! $canViewCost && ! $acceptEnteredCost) || (float) ($data['cost_price'] ?? 0) <= 0,
                 'is_active' => true,
                 'track_stock' => true,
             ]);
@@ -186,6 +206,54 @@ class PosApiController extends Controller
         return response()->json(['product' => $product->toPosArray($request->user())], 201);
     }
 
+
+    public function batchStore(Request $request, StockService $stock, AuditService $audit, VehicleVariantService $variants)
+    {
+        abort_unless($request->user()->canManageCatalog(), 403);
+        $data = $request->validate([
+            'rows' => ['required', 'array', 'min:1', 'max:100'],
+            'rows.*' => ['required', 'array'],
+        ]);
+        $products = DB::transaction(function () use ($request, $data, $stock, $audit, $variants) {
+            $saved = [];
+            foreach (array_values($data['rows']) as $index => $row) {
+                try {
+                    // Explicit blank values remain null rather than turning into zero.
+                    array_walk_recursive($row, function (&$value) {
+                        if (is_string($value)) $value = trim($value) === '' ? null : trim($value);
+                    });
+                    if (isset($row['secret_cost_code'])) $row['secret_cost_code'] = strtoupper($row['secret_cost_code']);
+                    if (isset($row['primary_part_number'])) $row['primary_part_number'] = strtoupper($row['primary_part_number']);
+                    $rowRequest = Request::create('/api/pos/quick-add', 'POST', $row);
+                    $rowRequest->setUserResolver(fn () => $request->user());
+                    $rowRequest->validate([
+                        'cost_price' => ['required_without:variants', 'nullable', 'numeric', 'min:0'],
+                        'stock_qty' => ['required_without:variants', 'nullable', 'numeric', 'min:0'],
+                        'variants' => ['nullable', 'array', 'max:50'],
+                    ]);
+                    if (! empty($row['variants'])) {
+                        $quantity = collect($row['variants'])->sum(fn ($v) => (float) ($v['stock_qty'] ?? 0));
+                        $row['stock_qty'] = $quantity;
+                        $row['cost_price'] = $quantity > 0
+                            ? round(collect($row['variants'])->sum(fn ($v) => (float) ($v['stock_qty'] ?? 0) * (float) ($v['cost_price'] ?? 0)) / $quantity, 2)
+                            : 0;
+                        $rowRequest->replace($row);
+                    }
+                    $response = $this->quickAdd($rowRequest, $stock, $audit, $variants, true)->getData(true);
+                    $product = $response['product'];
+                    $saved[] = ['id' => $product['id'], 'name' => $product['name'], 'edit_url' => route('products.edit', $product['id'])];
+                } catch (\Illuminate\Validation\ValidationException $error) {
+                    $errors = [];
+                    foreach ($error->errors() as $field => $messages) {
+                        $errors['rows.'.$index.'.'.$field] = $messages;
+                    }
+                    throw \Illuminate\Validation\ValidationException::withMessages($errors);
+                }
+            }
+            return $saved;
+        });
+        return response()->json(['products' => $products, 'count' => count($products)], 201);
+    }
 
     public function addVariants(Request $request, Product $product, VehicleVariantService $variants, StockService $stock)
     {

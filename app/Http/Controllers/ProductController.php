@@ -45,7 +45,7 @@ class ProductController extends Controller
 
     public function create()
     {
-        return view('products.form', [
+        return view('products.create-sheet', [
             'product' => new Product(),
             'categories' => Category::orderBy('name')->get(),
             'brands' => CarBrand::with('models')->orderBy('name')->get(),
