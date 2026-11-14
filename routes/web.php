@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\PosApiController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CustomerController;
@@ -9,9 +10,11 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SettingController;
-use App\Http\Controllers\Api\PosApiController;
+use App\Http\Controllers\StockReceiptController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -20,7 +23,8 @@ Route::get('/login', [LoginController::class, 'show'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.store');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'access'])->group(function () {
+    Route::view('/no-access', 'auth.no-access')->name('no-access');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
 
@@ -76,6 +80,10 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:owner,manager,storekeeper')->group(function () {
         Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
         Route::get('/inventory/movements', [InventoryController::class, 'movements'])->name('inventory.movements');
+        Route::get('/inventory/receipts', [StockReceiptController::class, 'index'])->name('inventory.receipts.index');
+        Route::get('/inventory/receipts/create', [StockReceiptController::class, 'create'])->name('inventory.receipts.create');
+        Route::post('/inventory/receipts', [StockReceiptController::class, 'store'])->name('inventory.receipts.store');
+        Route::get('/inventory/receipts/{stockReceipt}', [StockReceiptController::class, 'show'])->name('inventory.receipts.show');
         Route::get('/inventory/{product}', [InventoryController::class, 'show'])->name('inventory.show');
         Route::post('/inventory/{product}/adjust', [InventoryController::class, 'adjust'])->name('inventory.adjust');
         Route::patch('/inventory/{product}/variants/{fitment}/stock', [InventoryController::class, 'variantStock'])->name('inventory.variant-stock');
@@ -106,6 +114,16 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:owner')->group(function () {
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+        Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
+        Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
+        Route::patch('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
     });

@@ -55,5 +55,6 @@
     <div class="r-center r-small">{{ \App\Support\Pos::receiptFooter() }}</div>
     <div class="r-center r-barcode">*{{ $sale->invoice_number }}*</div>
 </div>
+@if(request()->boolean('print'))<script>window.addEventListener('load', () => window.print());</script>@endif
 </body>
 </html>

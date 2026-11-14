@@ -6,7 +6,7 @@
 @section('content')
 <div class="page-head">
     <div><h1>Customers</h1><p>Company accounts, credit limits and purchase history. Walk-in sales do not need a customer record.</p></div>
-    <div class="page-actions"><a class="btn" href="{{ route('customers.create') }}">+ Add customer</a></div>
+    @if(auth()->user()->canAccessRoute('customers.create'))<div class="page-actions"><a class="btn" href="{{ route('customers.create') }}">+ Add customer</a></div>@endif
 </div>
 
 <div class="card">
@@ -36,7 +36,7 @@
                         @endif
                     </td>
                     <td>{{ $customer->sales_count }}</td>
-                    <td class="text-right nowrap"><a class="btn btn-secondary btn-sm" href="{{ route('customers.statement', $customer) }}">Statement</a>@if(auth()->user()->canApprove()) <a class="btn btn-secondary btn-sm" href="{{ route('customers.edit', $customer) }}">Edit</a>@endif</td>
+                    <td class="text-right nowrap"><a class="btn btn-secondary btn-sm" href="{{ route('customers.statement', $customer) }}">Statement</a>@if(auth()->user()->canManageCustomers()) <a class="btn btn-secondary btn-sm" href="{{ route('customers.edit', $customer) }}">Edit</a>@endif</td>
                 </tr>
             @empty
                 <tr><td colspan="7"><div class="empty"><strong>No customers found.</strong>Add a trade customer or use walk-in at the POS.</div></td></tr>

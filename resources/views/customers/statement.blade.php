@@ -3,14 +3,16 @@
 @section('title', 'Credit statement')
 @section('subtitle', ($customer->company_name ?: $customer->name).' · outstanding credit')
 
+@section('body-class', 'statement-page')
 @section('content')
+<div class="statement-print-heading"><strong>{{ \App\Support\Pos::company() }}</strong><div>{{ \App\Support\Pos::address() }} · {{ \App\Support\Pos::phone() }} · TRN {{ \App\Support\Pos::trn() }}</div><div>Customer account statement · Printed {{ now()->format('d M Y H:i') }}</div></div>
 <div class="page-head">
     <div>
         <h1>{{ $customer->company_name ?: $customer->name }}</h1>
         <p>{{ $customer->phone ?: 'No phone' }} · {{ $customer->email ?: 'No email' }} · TRN {{ $customer->trn ?: 'not provided' }}</p>
     </div>
-    <div class="page-actions">
-        <a class="btn btn-secondary" href="{{ route('customers.index') }}">Back to customers</a>
+    <div class="page-actions no-print">
+        <a class="btn btn-secondary" href="{{ route(auth()->user()->canAccessRoute('customers.index') ? 'customers.index' : auth()->user()->homeRoute()) }}">Back to customers</a>
         <button class="btn" type="button" onclick="window.print()">Print statement</button>
     </div>
 </div>
@@ -61,7 +63,7 @@
     <div class="card-head"><h3>Credit invoices</h3><span class="small muted">Receive partial or full payment against each invoice</span></div>
     <div class="table-wrap">
         <table class="table">
-            <thead><tr><th>Invoice</th><th>Date</th><th>Due</th><th class="text-right">Total</th><th class="text-right">Paid at sale</th><th class="text-right">Credit</th><th class="text-right">Collected</th><th class="text-right">Balance</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Invoice</th><th>Date</th><th>Due</th><th class="text-right">Total</th><th class="text-right">Paid at sale</th><th class="text-right">Credit</th><th class="text-right">Collected</th><th class="text-right">Balance</th><th>Status</th><th class="statement-action no-print"></th></tr></thead>
             <tbody>
             @forelse($invoices as $row)
                 <tr>
@@ -77,9 +79,9 @@
                     <td class="text-right text-success">AED {{ number_format($row['collected'], 2) }}</td>
                     <td class="text-right main-cell {{ $row['balance'] > 0 ? 'text-danger' : 'text-success' }}">AED {{ number_format($row['balance'], 2) }}</td>
                     <td><span class="badge {{ $row['balance'] <= 0 ? 'badge-green' : ($row['collected'] > 0 ? 'badge-gold' : 'badge-red') }}">{{ $row['balance'] <= 0 ? 'Paid' : ($row['collected'] > 0 ? 'Partial' : 'Credit') }}</span></td>
-                    <td class="text-right nowrap">
-                        <a class="btn btn-secondary btn-sm" target="_blank" href="{{ route('sales.invoice', $row['sale']) }}">Invoice</a>
-                        @if($row['balance'] > 0)
+                    <td class="text-right nowrap statement-action no-print">
+                        @if(auth()->user()->canAccessRoute('sales.invoice'))<a class="btn btn-secondary btn-sm" target="_blank" href="{{ route('sales.invoice', $row['sale']) }}">Invoice</a>@endif
+                        @if($row['balance'] > 0 && auth()->user()->canCollectCredit())
                             <button class="btn btn-sm" type="button" data-collect data-sale="{{ $row['sale']->id }}" data-invoice="{{ $row['sale']->invoice_number }}" data-balance="{{ number_format($row['balance'], 2, '.', '') }}">Receive</button>
                         @endif
                     </td>
@@ -96,7 +98,7 @@
     <div class="card-head"><h3>Collections</h3><span class="small muted">{{ $customer->collections->count() }} receipts</span></div>
     <div class="table-wrap">
         <table class="table">
-            <thead><tr><th>Receipt</th><th>Date</th><th>Invoice</th><th>Method</th><th>Received by</th><th class="text-right">Amount</th><th></th></tr></thead>
+            <thead><tr><th>Receipt</th><th>Date</th><th>Invoice</th><th>Method</th><th>Received by</th><th class="text-right">Amount</th><th class="statement-action no-print"></th></tr></thead>
             <tbody>
             @forelse($customer->collections as $payment)
                 <tr>

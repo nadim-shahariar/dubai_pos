@@ -12,6 +12,7 @@ class InvoiceNumber
         $period ??= now()->format('Y');
         $prefix = Pos::invoicePrefix();
         $documentPrefix = match ($type) {
+            'stock_receipt' => 'GRN-'.$prefix,
             'credit_note' => 'CN-'.$prefix,
             'return' => 'RET-'.$prefix,
             'collection' => 'CR-'.$prefix,

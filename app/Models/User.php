@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Access;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -27,11 +28,65 @@ class User extends Authenticatable
         ];
     }
 
-    public function isOwner(): bool { return $this->role === 'owner'; }
-    public function isManager(): bool { return $this->role === 'manager'; }
-    public function isCashier(): bool { return $this->role === 'cashier'; }
-    public function isStorekeeper(): bool { return $this->role === 'storekeeper'; }
-    public function isAccountant(): bool { return $this->role === 'accountant'; }
+    public function roleModel()
+    {
+        return $this->belongsTo(Role::class, 'role', 'slug');
+    }
+
+    public function baseRole(): string
+    {
+        return $this->roleModel?->base_role ?: $this->role;
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->role === 'owner') {
+            return true;
+        }
+
+        return (bool) $this->roleModel?->hasPermission($permission);
+    }
+
+    public function isOwner(): bool
+    {
+        return $this->role === 'owner';
+    }
+
+    public function isManager(): bool
+    {
+        return $this->baseRole() === 'manager';
+    }
+
+    public function isCashier(): bool
+    {
+        return $this->baseRole() === 'cashier';
+    }
+
+    public function isStorekeeper(): bool
+    {
+        return $this->baseRole() === 'storekeeper';
+    }
+
+    public function isAccountant(): bool
+    {
+        return $this->baseRole() === 'accountant';
+    }
+
+    public function canAccessRoute(string $route): bool
+    {
+        return Access::allows($this, $route);
+    }
+
+    public function homeRoute(): string
+    {
+        foreach (['dashboard', 'pos.index', 'products.index', 'inventory.index', 'sales.index', 'customers.index', 'reports.index', 'users.index', 'settings.edit'] as $route) {
+            if ($this->canAccessRoute($route)) {
+                return $route;
+            }
+        }
+
+        return 'no-access';
+    }
 
     public function hasRole(string ...$roles): bool
     {
@@ -40,37 +95,52 @@ class User extends Authenticatable
 
     public function canViewCost(): bool
     {
-        return $this->hasRole('owner', 'manager', 'accountant');
+        return $this->hasPermission('view_cost');
     }
 
     public function canApprove(): bool
     {
-        return $this->hasRole('owner', 'manager');
+        return $this->hasPermission('approve');
     }
 
     public function canManageCatalog(): bool
     {
-        return $this->hasRole('owner', 'manager', 'storekeeper');
+        return $this->hasPermission('manage_catalog');
     }
 
     public function canSell(): bool
     {
-        return $this->hasRole('owner', 'manager', 'cashier');
+        return $this->hasPermission('sell');
     }
 
     public function canCollectCredit(): bool
     {
-        return $this->hasRole('owner', 'manager', 'cashier', 'accountant');
+        return $this->hasPermission('collect_credit');
     }
 
     public function canViewReports(): bool
     {
-        return $this->hasRole('owner', 'manager', 'accountant');
+        return $this->hasPermission('view_reports');
+    }
+
+    public function canManageInventory(): bool
+    {
+        return $this->hasPermission('manage_inventory');
+    }
+
+    public function canManageUsers(): bool
+    {
+        return $this->hasPermission('manage_users');
+    }
+
+    public function canManageCustomers(): bool
+    {
+        return $this->hasPermission('manage_customers');
     }
 
     public function roleLabel(): string
     {
-        return ucfirst($this->role);
+        return $this->roleModel?->name ?: ucfirst($this->role);
     }
 
     public function sales()

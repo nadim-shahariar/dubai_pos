@@ -67,7 +67,6 @@ class PosApiController extends Controller
         return response()->json(['data' => $customers]);
     }
 
-
     public function storeCustomer(Request $request, AuditService $audit)
     {
         $data = $request->validate([
@@ -206,7 +205,6 @@ class PosApiController extends Controller
         return response()->json(['product' => $product->toPosArray($request->user())], 201);
     }
 
-
     public function batchStore(Request $request, StockService $stock, AuditService $audit, VehicleVariantService $variants)
     {
         abort_unless($request->user()->canManageCatalog(), 403);
@@ -220,10 +218,16 @@ class PosApiController extends Controller
                 try {
                     // Explicit blank values remain null rather than turning into zero.
                     array_walk_recursive($row, function (&$value) {
-                        if (is_string($value)) $value = trim($value) === '' ? null : trim($value);
+                        if (is_string($value)) {
+                            $value = trim($value) === '' ? null : trim($value);
+                        }
                     });
-                    if (isset($row['secret_cost_code'])) $row['secret_cost_code'] = strtoupper($row['secret_cost_code']);
-                    if (isset($row['primary_part_number'])) $row['primary_part_number'] = strtoupper($row['primary_part_number']);
+                    if (isset($row['secret_cost_code'])) {
+                        $row['secret_cost_code'] = strtoupper($row['secret_cost_code']);
+                    }
+                    if (isset($row['primary_part_number'])) {
+                        $row['primary_part_number'] = strtoupper($row['primary_part_number']);
+                    }
                     $rowRequest = Request::create('/api/pos/quick-add', 'POST', $row);
                     $rowRequest->setUserResolver(fn () => $request->user());
                     $rowRequest->validate([
@@ -242,16 +246,18 @@ class PosApiController extends Controller
                     $response = $this->quickAdd($rowRequest, $stock, $audit, $variants, true)->getData(true);
                     $product = $response['product'];
                     $saved[] = ['id' => $product['id'], 'name' => $product['name'], 'edit_url' => route('products.edit', $product['id'])];
-                } catch (\Illuminate\Validation\ValidationException $error) {
+                } catch (ValidationException $error) {
                     $errors = [];
                     foreach ($error->errors() as $field => $messages) {
                         $errors['rows.'.$index.'.'.$field] = $messages;
                     }
-                    throw \Illuminate\Validation\ValidationException::withMessages($errors);
+                    throw ValidationException::withMessages($errors);
                 }
             }
+
             return $saved;
         });
+
         return response()->json(['products' => $products, 'count' => count($products)], 201);
     }
 
@@ -405,13 +411,12 @@ class PosApiController extends Controller
         return response()->json(['ok' => true]);
     }
 
-
     public function recentSales(Request $request)
     {
         $sales = Sale::query()
             ->with(['customer', 'user'])
             ->withCount(['items', 'returns', 'collections'])
-            ->when($request->user()->isCashier(), fn ($query) => $query->where('user_id', $request->user()->id))
+            ->when(($request->user()->isCashier() || ! $request->user()->hasPermission('view_sales')), fn ($query) => $query->where('user_id', $request->user()->id))
             ->latest('sold_at')
             ->limit(8)
             ->get()
@@ -567,6 +572,7 @@ class PosApiController extends Controller
         $products = Product::whereIn('id', collect($data['items'])->pluck('product_id'))->get()->keyBy('id');
         $lines = collect($data['items'])->map(function ($item) use ($products) {
             $product = $products->get($item['product_id']);
+
             return $item + [
                 'primary_part_number' => $product->primary_part_number,
                 'name' => $product->name,
@@ -587,6 +593,7 @@ class PosApiController extends Controller
         // This endpoint is used by cashier terminals. Never return cost prices.
         $totals['lines'] = collect($totals['lines'])->map(function ($line) {
             unset($line['cost_price']);
+
             return $line;
         })->all();
 

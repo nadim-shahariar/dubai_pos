@@ -15,12 +15,14 @@
         <p class="muted mt-1">Invoices, discounts, VAT, returns and a day-by-day view of the counter.</p>
         <span class="small text-teal">Open report →</span>
     </a>
+    @if(auth()->user()->canViewCost())
     <a class="card card-pad" href="{{ route('reports.profit') }}" style="display:block;color:inherit">
         <span class="badge badge-green">Margin</span>
         <h2 class="mt-1">Gross profit by part</h2>
         <p class="muted mt-1">Net sales minus cost of goods sold, ranked by profit and margin.</p>
         <span class="small text-teal">Open report →</span>
     </a>
+    @endif
     <a class="card card-pad" href="{{ route('reports.cash-credit') }}" style="display:block;color:inherit">
         <span class="badge badge-gold">Credit</span>
         <h2 class="mt-1">Cash &amp; credit sales</h2>
@@ -33,12 +35,14 @@
         <p class="muted mt-1">Output VAT by rate, credit notes and the period worksheet for the accountant.</p>
         <span class="small text-teal">Open report →</span>
     </a>
+    @if(auth()->user()->canViewCost())
     <a class="card card-pad" href="{{ route('reports.inventory') }}" style="display:block;color:inherit">
         <span class="badge badge-navy">Stock</span>
         <h2 class="mt-1">Inventory valuation</h2>
         <p class="muted mt-1">Units on hand, value at cost, retail value and low-stock exposure.</p>
         <span class="small text-teal">Open report →</span>
     </a>
+    @endif
 </div>
 
 <div class="card mt-3">

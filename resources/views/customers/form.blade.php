@@ -22,7 +22,7 @@
                 <div class="field"><label for="car-plate-number">Car plate number (optional)</label><input id="car-plate-number" name="car_plate_number" value="{{ old('car_plate_number', $customer->car_plate_number) }}" maxlength="50" placeholder="e.g. Dubai A 12345"></div>
                 <div class="field"><label>Email</label><input name="email" type="email" value="{{ old('email', $customer->email) }}" maxlength="150"></div>
                 <div class="field"><label>TRN (15 digits)</label><input name="trn" value="{{ old('trn', $customer->trn) }}" maxlength="15" inputmode="numeric" placeholder="100123456789012"><div class="hint">Required on a full B2B tax invoice.</div></div>
-                @if(auth()->user()->canApprove())
+                @if(auth()->user()->canManageCustomers())
                     <div class="field"><label>Credit limit (AED)</label><input name="credit_limit" type="number" step="0.01" min="0" value="{{ old('credit_limit', $customer->credit_limit ?? 0) }}"></div>
                     <div class="field"><label>Payment terms (days)</label><input name="payment_terms_days" type="number" min="0" max="365" value="{{ old('payment_terms_days', $customer->payment_terms_days ?? 0) }}"></div>
                 @else

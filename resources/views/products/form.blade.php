@@ -101,7 +101,7 @@
                         <thead><tr><th>Vehicle</th><th>Years</th><th>Part number</th><th>Stock</th><th></th></tr></thead>
                         <tbody>
                         @forelse($product->fitments as $fitment)
-                            <tr>
+                            <tr id="fitment-{{ $fitment->id }}">
                                 <td>{{ $fitment->brand?->name }} {{ $fitment->model?->name }}<div class="sub">{{ $fitment->engine }}</div></td>
                                 <td>{{ $fitment->year_from }}–{{ $fitment->year_to }}</td>
                                 <td class="mono">{{ $fitment->mapped_part_number ?: '—' }}</td>

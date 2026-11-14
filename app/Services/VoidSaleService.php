@@ -15,8 +15,7 @@ class VoidSaleService
     public function __construct(
         private readonly StockService $stock,
         private readonly AuditService $audit,
-    ) {
-    }
+    ) {}
 
     public function void(User $user, Sale $sale, ?string $pin, ?string $reason = null): Sale
     {
@@ -110,8 +109,7 @@ class VoidSaleService
 
         return User::query()
             ->where('is_active', true)
-            ->whereIn('role', ['owner', 'manager'])
             ->get()
-            ->first(fn (User $user) => $user->pin && Hash::check($pin, $user->pin));
+            ->first(fn (User $user) => $user->canApprove() && $user->pin && Hash::check($pin, $user->pin));
     }
 }

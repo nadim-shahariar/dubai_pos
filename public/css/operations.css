@@ -1,0 +1,33 @@
+.bulk-receive-table { min-width: 900px; }
+.bulk-receive-table input[type="number"] { width: 130px; }
+.selected-row td, .sale-selected td { background: #eaf7f4; }
+.catalogue-shortcuts { margin: 0 0 14px; color: var(--muted); font-size: 11px; }
+kbd { display: inline-block; background: #edf2f7; border: 1px solid #d6e0e9; border-radius: 4px; padding: 1px 5px; font-size: 10px; font-family: inherit; }
+.statement-print-heading { display: none; }
+.statement-page .stat-value { font-size: clamp(18px, 2.2vw, 28px); overflow-wrap: anywhere; }
+.statement-page .table { min-width: 820px; }
+.statement-page .page-head { gap: 12px; }
+.statement-page .page-head h1 { overflow-wrap: anywhere; }
+@media(max-width:700px) { .statement-page .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .statement-page .stat { min-width: 0; padding: 12px; } }
+@media print {
+    @page statement { size: A4 landscape; margin: 10mm; }
+    @page stockreceipt { size: A4 portrait; margin: 10mm; }
+    .statement-page .content { page: statement; }
+    .stock-receipt-page .content { page: stockreceipt; }
+    .statement-page .app-shell, .stock-receipt-page .app-shell { display: block; }
+    .statement-page .sidebar, .statement-page .topbar, .stock-receipt-page .sidebar, .stock-receipt-page .topbar { display: none !important; }
+    .statement-page .page-actions, .statement-page button, .statement-page .modal-backdrop, .statement-page form, .statement-page .statement-action, .statement-page .no-print, .stock-receipt-page .no-print { display: none !important; }
+    .statement-page .content, .stock-receipt-page .content { padding: 0; }
+    .statement-print-heading { display: block; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 12px; }
+    .statement-page .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .statement-page .stat { padding: 8px; border: 1px solid #bbb; }
+    .statement-page .stat-value { font-size: 18px; }
+    .statement-page .card, .stock-receipt-page .card { box-shadow: none; border: 0; border-radius: 0; }
+    .statement-page .card-head, .statement-page .card-body { padding: 8px 0; }
+    .statement-page .table-wrap, .stock-receipt-page .table-wrap { overflow: visible; }
+    .statement-page .table, .stock-receipt-page .table { min-width: 0; width: 100%; font-size: 9px; }
+    .statement-page .table th, .statement-page .table td, .stock-receipt-page .table th, .stock-receipt-page .table td { padding: 6px 4px; overflow-wrap: anywhere; white-space: normal; }
+    .statement-page thead, .stock-receipt-page thead { display: table-header-group; }
+    .statement-page tr, .stock-receipt-page tr { break-inside: avoid; }
+    .statement-page a, .stock-receipt-page a { color: inherit; text-decoration: none; }
+}

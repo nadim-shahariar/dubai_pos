@@ -10,9 +10,7 @@ class EnsureRole
 {
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (! $request->user() || ! in_array($request->user()->role, $roles, true)) {
-            abort(403, 'You do not have permission to access this page.');
-        }
+        abort_unless($request->user()?->canAccessRoute((string) $request->route()->getName()), 403, 'Your role does not have permission for this page.');
 
         return $next($request);
     }

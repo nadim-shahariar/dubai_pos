@@ -14,7 +14,7 @@ class LoginController extends Controller
     public function show()
     {
         if (Auth::check()) {
-            return redirect()->route('dashboard');
+            return redirect()->route(auth()->user()->homeRoute());
         }
 
         return view('auth.login');
@@ -51,7 +51,7 @@ class LoginController extends Controller
         $request->user()->forceFill(['last_login_at' => now()])->save();
         $audit->log('auth.login', $request->user(), ['role' => $request->user()->role]);
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route($request->user()->homeRoute()));
     }
 
     public function logout(Request $request, AuditService $audit)

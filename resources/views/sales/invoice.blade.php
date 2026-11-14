@@ -82,5 +82,6 @@
     <div class="invoice-signature"><span>Received by</span></div>
     <footer class="invoice-footer"><div>{{ $company }} · {{ $sale->invoice_number }}</div></footer>
 </main>
+@if(request()->boolean('print'))<script>window.addEventListener('load', () => window.print());</script>@endif
 </body>
 </html>

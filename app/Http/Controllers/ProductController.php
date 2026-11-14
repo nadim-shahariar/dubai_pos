@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\CarBrand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductAlias;
+use App\Models\ProductFitment;
+use App\Models\StockReceiptItem;
 use App\Services\AuditService;
 use App\Services\StockService;
 use App\Services\VehicleVariantService;
@@ -18,7 +21,7 @@ class ProductController extends Controller
     {
         $q = trim((string) $request->query('q'));
         $products = Product::query()
-            ->with(['category', 'fitments.brand', 'fitments.model'])
+            ->with(['category', 'fitments.brand', 'fitments.model', 'fitments.category'])
             ->withCount(['fitments', 'aliases'])
             ->when($q, function ($query) use ($q) {
                 $query->where(function ($sub) use ($q) {
@@ -26,10 +29,14 @@ class ProductController extends Controller
                         ->orWhere('name', 'like', "%{$q}%")
                         ->orWhere('barcode', 'like', "%{$q}%")
                         ->orWhere('brand', 'like', "%{$q}%")
+                        ->orWhereHas('fitments', fn ($f) => $f->where('mapped_part_number', 'like', "%{$q}%")->orWhereHas('brand', fn ($b) => $b->where('name', 'like', "%{$q}%"))->orWhereHas('model', fn ($m) => $m->where('name', 'like', "%{$q}%")))
                         ->orWhereHas('aliases', fn ($a) => $a->where('reference_number', 'like', "%{$q}%"));
                 });
             })
-            ->when($request->query('filter') === 'low', fn ($query) => $query->whereColumn('stock_qty', '<=', 'reorder_level'))
+            ->when($request->query('filter') === 'low', fn ($query) => $query->where(function ($low) {
+                $low->where(fn ($single) => $single->doesntHave('fitments')->whereColumn('stock_qty', '<=', 'reorder_level'))
+                    ->orWhereHas('fitments', fn ($variant) => $variant->whereNull('stock_qty')->orWhereColumn('stock_qty', '<=', 'products.reorder_level'));
+            }))
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();
@@ -46,7 +53,7 @@ class ProductController extends Controller
     public function create()
     {
         return view('products.create-sheet', [
-            'product' => new Product(),
+            'product' => new Product,
             'categories' => Category::orderBy('name')->get(),
             'brands' => CarBrand::with('models')->orderBy('name')->get(),
             'partBrands' => $this->partBrands(),
@@ -78,7 +85,7 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $product->load(['fitments.brand', 'fitments.model', 'aliases', 'category']);
+        $product->load(['fitments.brand', 'fitments.model', 'fitments.category', 'aliases', 'category']);
 
         return view('products.form', [
             'product' => $product,
@@ -117,9 +124,12 @@ class ProductController extends Controller
         return back()->with('success', $count.' vehicle variant'.($count === 1 ? '' : 's').' added. New brands and models are saved for suggestions.');
     }
 
-    public function destroyFitment(Product $product, \App\Models\ProductFitment $fitment)
+    public function destroyFitment(Product $product, ProductFitment $fitment)
     {
         abort_unless($fitment->product_id === $product->id, 404);
+        if (StockReceiptItem::where('product_fitment_id', $fitment->id)->exists()) {
+            return back()->withErrors(['variants' => 'This variant has stock receipt history and cannot be removed.']);
+        }
         $fitment->delete();
 
         return back()->with('success', 'Fitment removed.');
@@ -137,7 +147,7 @@ class ProductController extends Controller
         return back()->with('success', 'Cross-reference added.');
     }
 
-    public function destroyAlias(Product $product, \App\Models\ProductAlias $alias)
+    public function destroyAlias(Product $product, ProductAlias $alias)
     {
         abort_unless($alias->product_id === $product->id, 404);
         $alias->delete();

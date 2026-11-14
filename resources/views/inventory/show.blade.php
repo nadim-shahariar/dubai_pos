@@ -27,7 +27,7 @@
                 <thead><tr><th>Vehicle variant</th><th>Part number</th><th class="text-right">Variant stock</th><th style="width:260px">Set counted stock</th></tr></thead>
                 <tbody>
                 @foreach($product->fitments as $fitment)
-                    <tr>
+                    <tr id="variant-{{ $fitment->id }}">
                         <td><div class="main-cell">{{ $fitment->brand?->name }} {{ $fitment->model?->name }}</div><div class="sub">{{ $fitment->year_from }}–{{ $fitment->year_to }}</div></td>
                         <td class="mono">{{ $fitment->mapped_part_number }}</td>
                         <td class="text-right main-cell">{{ $fitment->stock_qty === null ? 'Not set · 0 available' : number_format((float) $fitment->stock_qty, 3) }}</td>

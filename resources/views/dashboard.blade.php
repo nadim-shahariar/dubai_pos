@@ -23,11 +23,13 @@
         <div class="stat-value">AED {{ number_format($todaySales, 2) }}</div>
         <div class="stat-meta">{{ $todayCount }} invoice{{ $todayCount === 1 ? '' : 's' }} · incl. 5% VAT</div>
     </div>
+    @if(auth()->user()->canViewCost())
     <div class="stat green">
         <div class="stat-label">Gross profit today</div>
         <div class="stat-value">AED {{ number_format($grossProfit, 2) }}</div>
         <div class="stat-meta">Net sales minus cost of goods sold</div>
     </div>
+    @endif
     <div class="stat gold">
         <div class="stat-label">VAT collected today</div>
         <div class="stat-value">AED {{ number_format($todayVat, 2) }}</div>
@@ -99,7 +101,7 @@
                         </div>
                         <div class="text-right">
                             <div style="font-weight:700;font-size:12px">AED {{ number_format((float) $product->revenue, 2) }}</div>
-                            <div class="small text-success">Margin {{ (float) $product->net > 0 ? number_format((((float) $product->net - (float) $product->cost) / (float) $product->net) * 100, 1) : '0.0' }}%</div>
+                            @if(auth()->user()->canViewCost())<div class="small text-success">Margin {{ (float) $product->net > 0 ? number_format((((float) $product->net - (float) $product->cost) / (float) $product->net) * 100, 1) : '0.0' }}%</div>@endif
                         </div>
                     </div>
                 @empty

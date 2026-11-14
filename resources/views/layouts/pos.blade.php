@@ -12,7 +12,7 @@
 <body class="pos-body">
 <div class="pos-layout">
     <header class="pos-topbar">
-        <a class="brand" href="{{ route('dashboard') }}">
+        <a class="brand" href="{{ route(auth()->user()->homeRoute()) }}">
             <span class="brand-mark">GG</span>
             <span>
                 <span class="brand-name">GIT GADGETS</span>
@@ -27,7 +27,7 @@
             </span>
         </div>
         <div class="pos-top-actions">
-            <a class="btn btn-secondary" href="{{ route('dashboard') }}">Back office</a>
+            <a class="btn btn-secondary" href="{{ route(auth()->user()->homeRoute()) }}">Back office</a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button class="btn btn-secondary" type="submit">Logout</button>

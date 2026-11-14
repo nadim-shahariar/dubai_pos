@@ -34,7 +34,7 @@ class CustomerController extends Controller
 
     public function create()
     {
-        return view('customers.form', ['customer' => new Customer()]);
+        return view('customers.form', ['customer' => new Customer]);
     }
 
     public function store(Request $request, AuditService $audit)
@@ -129,7 +129,7 @@ class CustomerController extends Controller
         $data['credit_limit'] = $data['credit_limit'] ?? 0;
         $data['payment_terms_days'] = $data['payment_terms_days'] ?? 0;
 
-        if (! $request->user()->canApprove()) {
+        if (! $request->user()->canManageCustomers()) {
             $data['credit_limit'] = 0;
             $data['payment_terms_days'] = 0;
         }

@@ -18,7 +18,7 @@ class SaleController extends Controller
 
         $base = Sale::query()
             ->whereBetween('sold_at', [$from, $to])
-            ->when($request->user()->isCashier(), fn ($query) => $query->where('user_id', $request->user()->id))
+            ->when(($request->user()->isCashier() || ! $request->user()->hasPermission('view_sales')), fn ($query) => $query->where('user_id', $request->user()->id))
             ->when($q, function ($query) use ($q) {
                 $query->where(function ($sub) use ($q) {
                     $sub->where('invoice_number', 'like', "%{$q}%")
@@ -35,7 +35,7 @@ class SaleController extends Controller
             'net' => (float) (clone $base)->sum('net_total'),
         ];
 
-        $sales = $base->with(['user', 'customer'])->latest('sold_at')->paginate(20)->withQueryString();
+        $sales = $base->with(['user', 'customer', 'payments'])->latest('sold_at')->paginate(20)->withQueryString();
 
         return view('sales.index', compact('sales', 'totals', 'from', 'to', 'q'));
     }
@@ -115,7 +115,7 @@ class SaleController extends Controller
 
     private function authorizeSale(Sale $sale): void
     {
-        if (auth()->user()->isCashier() && $sale->user_id !== auth()->id()) {
+        if ((auth()->user()->isCashier() || ! auth()->user()->hasPermission('view_sales')) && $sale->user_id !== auth()->id()) {
             abort(403, 'You can only view your own sales.');
         }
     }

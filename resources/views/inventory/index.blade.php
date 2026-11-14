@@ -6,9 +6,9 @@
 @section('content')
 <div class="page-head">
     <div><h1>Inventory</h1><p>Every sale, receipt, return and adjustment is recorded as a stock movement. Adjustments should be the exception, not the routine.</p></div>
-    <div class="page-actions">
+    <div class="page-actions"><a class="btn" href="{{ route('inventory.receipts.create') }}">Receive multiple items</a><a class="btn btn-secondary" href="{{ route('inventory.receipts.index') }}">Receipt history by date</a>
         <a class="btn btn-secondary" href="{{ route('inventory.movements') }}">Movement ledger</a>
-        <a class="btn btn-secondary" href="{{ route('products.index', ['filter' => 'low']) }}">Low stock catalogue</a>
+        @if(auth()->user()->canManageCatalog())<a class="btn btn-secondary" href="{{ route('products.index', ['filter' => 'low']) }}">Low stock catalogue</a>@endif
     </div>
 </div>
 

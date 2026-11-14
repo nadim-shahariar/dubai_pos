@@ -12,7 +12,7 @@ class ApprovalService
     /**
      * Authorise a sale that contains discounts or price overrides.
      *
-     * @param array<int, array<string, mixed>> $lines
+     * @param  array<int, array<string, mixed>>  $lines
      * @return User|null The approving manager, or null when no approval is needed.
      */
     public function authorise(User $user, array $lines, float $invoiceDiscountPercent, ?string $pin): ?User
@@ -33,7 +33,7 @@ class ApprovalService
             }
 
             if ($price < $original - 0.0001) {
-                if ($user->isCashier()) {
+                if (! $user->canApprove()) {
                     $requiresApproval = true;
                 }
             }
@@ -74,8 +74,7 @@ class ApprovalService
 
         return User::query()
             ->where('is_active', true)
-            ->whereIn('role', ['owner', 'manager'])
             ->get()
-            ->first(fn (User $user) => $user->pin && Hash::check($pin, $user->pin));
+            ->first(fn (User $user) => $user->canApprove() && $user->pin && Hash::check($pin, $user->pin));
     }
 }

@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') · {{ config('pos.name') }}</title>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/operations.css') }}?v={{ filemtime(public_path('css/operations.css')) }}">
     @stack('head')
 </head>
 <body class="@yield('body-class')">
@@ -20,12 +21,14 @@
         ['route' => 'sales.index', 'label' => 'Sales', 'active' => 'sales.*', 'roles' => ['owner','manager','cashier'], 'icon' => '<path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2Z"/><path d="M9 7h6M9 11h6M9 15h3"/>'],
         ['route' => 'reports.index', 'label' => 'Reports', 'active' => 'reports.*', 'roles' => ['owner','manager','accountant'], 'icon' => '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'],
         ['route' => 'audit.index', 'label' => 'Audit Trail', 'active' => 'audit.*', 'roles' => ['owner','manager','accountant'], 'icon' => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>'],
+        ['route' => 'users.index', 'label' => 'Users', 'active' => 'users.*', 'roles' => ['owner'], 'icon' => '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>'],
+        ['route' => 'roles.index', 'label' => 'Roles', 'active' => 'roles.*', 'roles' => ['owner'], 'icon' => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>'],
         ['route' => 'settings.edit', 'label' => 'Settings', 'active' => 'settings.*', 'roles' => ['owner'], 'icon' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21h-4v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3v-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V3h4v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.1v4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>'],
     ];
 @endphp
 <div class="app-shell">
     <aside class="sidebar">
-        <a class="brand" href="{{ route('dashboard') }}">
+        <a class="brand" href="{{ route($user->homeRoute()) }}">
             <span class="brand-mark">GG</span>
             <span>
                 <span class="brand-name">GIT GADGETS</span>
@@ -35,7 +38,7 @@
 
         <div class="nav-label">Workspace</div>
         @foreach($navItems as $item)
-            @if($user && $user->hasRole(...$item['roles']))
+            @if($user && $user->canAccessRoute($item['route']))
                 <a class="nav-link {{ request()->routeIs($item['active']) ? 'active' : '' }}" href="{{ route($item['route']) }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">{!! $item['icon'] !!}</svg>
                     <span>{{ $item['label'] }}</span>
@@ -50,10 +53,10 @@
                 <span>Open POS</span>
             </a>
         @endif
-        <a class="nav-link" href="{{ route('sales.index') }}">
+        @if($user->canAccessRoute('sales.index'))<a class="nav-link" href="{{ route('sales.index') }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/></svg>
             <span>Today's invoices</span>
-        </a>
+        </a>@endif
 
         <div class="sidebar-footer">
             <div class="user-chip">
@@ -104,6 +107,7 @@
     </div>
 </div>
 <script src="{{ asset('js/app.js') }}" defer></script>
+<script src="{{ asset('js/page-shortcuts.js') }}?v={{ filemtime(public_path('js/page-shortcuts.js')) }}" defer></script>
 @stack('scripts')
 </body>
 </html>
