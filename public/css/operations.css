@@ -12,7 +12,15 @@ kbd { display: inline-block; background: #edf2f7; border: 1px solid #d6e0e9; bor
 @media print {
     @page statement { size: A4 landscape; margin: 10mm; }
     @page stockreceipt { size: A4 portrait; margin: 10mm; }
-    .statement-page .content { page: statement; }
+    .statement-page .content { page: statement; font-size: 11px; }
+    .statement-page .page-head { margin-bottom: 10px; }
+    .statement-page .page-head h1 { font-size: 22px; }
+    .statement-page .card.mt-3 { margin-top: 10px; }
+    .statement-page .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .statement-page .empty { padding: 10px; }
+    .statement-page .stat::after { display: none; }
+    .statement-page .stat-grid { margin-bottom: 10px; }
+    .statement-page .card-head h3 { font-size: 13px; }
     .stock-receipt-page .content { page: stockreceipt; }
     .statement-page .app-shell, .stock-receipt-page .app-shell { display: block; }
     .statement-page .sidebar, .statement-page .topbar, .stock-receipt-page .sidebar, .stock-receipt-page .topbar { display: none !important; }
